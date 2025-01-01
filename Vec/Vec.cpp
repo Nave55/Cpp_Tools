@@ -89,11 +89,11 @@ auto Vec<T>::end() const -> T* { return &m_vec[m_len]; }
 
 template <typename T>
 auto Vec<T>::print() const -> void {
+    if (m_len == 0) {
+        std::cout << "[]\n";
+        return;
+    }
     for (size_t i = 0; i < m_len; i++) {
-        if (m_len == 0) {
-            std::cout << "[]\n";
-            break;
-        }
         if (i == 0) std::cout << "[" << m_vec[i];
         else if (i < m_len - 1) std::cout << ", " << m_vec[i];
         else std::cout << ", " << m_vec[i] << "]\n";
@@ -363,11 +363,14 @@ auto Vec<T>::pop_back() -> T {;
 
 template <typename T>
 auto Vec<T>::ordered_remove(size_t ind) -> void {
-    assert(m_len > 0);
+    if (ind >= m_len || m_len == 0) return;
 
-    // shift elements to the left
-    for (size_t i = ind; i < m_len - 1; ++i) 
-        std::swap(m_vec[i], m_vec[i + 1]);
+    if (m_len == 1) m_vec[0] = 0;
+    else {
+        // shift elements to the left
+        for (size_t i = ind; i < m_len - 1; ++i) 
+            std::swap(m_vec[i], m_vec[i + 1]);
+    }
     
     // decrement the length
     --m_len;
@@ -375,9 +378,11 @@ auto Vec<T>::ordered_remove(size_t ind) -> void {
 
 template <typename T>
 auto Vec<T>::unordered_remove(size_t ind) -> void {
-    assert(m_len > 0);
+    if (ind >= m_len || m_len == 0) return;
 
-    // swap the element to be removed with the last element and pop_back
-    m_vec[ind] = pop_back();
-    
+    if (m_len == 1) auto _ = pop_back();
+    else {
+        // swap the element to be removed with the last element and pop_back
+        m_vec[ind] = pop_back(); 
+    }
 }
