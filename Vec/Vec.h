@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <initializer_list>
 
-
 template <typename T>
 class Vec {
 private:
@@ -32,8 +31,8 @@ public:
     auto last() const -> T;
     auto clear() -> void;
     auto sort_vec() -> void;
-    auto linear_search(T x) const -> std::size_t;
-    auto binary_search(T x) const -> std::size_t;
+    auto linear_search(T x) const -> int;
+    auto binary_search(T x) const -> int;
     auto resize(std::size_t sz) -> void;
     auto reserve(std::size_t capacity) -> void;
     auto shrink_to_fit() -> void;
