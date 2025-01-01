@@ -124,7 +124,7 @@ template <typename T>
 auto Vec<T>::sort_vec() -> void { std::sort(begin(), end()); }
 
 template <typename T>
-auto Vec<T>::linear_search(T x) const -> size_t {
+auto Vec<T>::linear_search(T x) const -> int {
     for (size_t i = 0; i < m_len; i++) {
         if (m_vec[i] == x) return i;
     }
@@ -132,7 +132,7 @@ auto Vec<T>::linear_search(T x) const -> size_t {
 }
 
 template <typename T>
-auto Vec<T>::binary_search(T x) const -> size_t {
+auto Vec<T>::binary_search(T x) const -> int {
     int high = m_len - 1;
     int low = 0;
 
