@@ -362,6 +362,17 @@ auto Vec<T>::pop_back() -> T {;
 }
 
 template <typename T>
+auto Vec<T>::pop() -> void {;
+    assert(m_len > 0);
+
+    // set the last element to 0
+    m_vec[m_len - 1] = 0;
+
+    // decrement the length
+    --m_len; 
+}
+
+template <typename T>
 auto Vec<T>::ordered_remove(size_t ind) -> void {
     if (ind >= m_len || m_len == 0) return;
 
@@ -380,7 +391,7 @@ template <typename T>
 auto Vec<T>::unordered_remove(size_t ind) -> void {
     if (ind >= m_len || m_len == 0) return;
 
-    if (m_len == 1) auto _ = pop_back();
+    if (m_len == 1) pop();
     else {
         // swap the element to be removed with the last element and pop_back
         m_vec[ind] = pop_back(); 
