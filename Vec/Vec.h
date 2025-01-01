@@ -39,6 +39,7 @@ public:
     auto shrink_to_fit() -> void;
     auto push_back(T val) -> void;  
     auto insert(T val, std::size_t ind = 0) -> void;
+    auto pop() -> void;
     auto pop_back() -> T;
     auto ordered_remove(std::size_t ind = 0) -> void;
     auto unordered_remove(std::size_t ind = 0) -> void;
