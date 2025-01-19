@@ -1,0 +1,52 @@
+// example usage for Vec.hpp
+// auto main() -> int {
+//     Vec<double> v({3.3, 2.2, 1.1, 4.4, 5.5}, 20);
+//     // Vec<double> v(0, 5);
+//     // Vec<double> v;
+
+//     v.push_back(6.6);
+//     v.insert(23.1, 0);
+//     v.sort_vec();
+//     v.pop();
+//     v.print();
+//     v.unordered_remove(1);
+//     v.printInfo();
+// }
+
+
+// example usage for Arena_Allocator.hpp
+// int main() {
+//     create arena of size '_ bytes'
+//     Arena a {1024};
+
+//     // allocate memory for a new int
+//     auto my_int = (int*) a.alloc(sizeof(int));
+//     *my_int = 20;
+//     std::cout << sizeof(*my_int) << std::endl;
+
+//     //resize allocation from int to long long
+//     auto my_long_long = (long long*) a.resize(my_int, sizeof(int), sizeof(long long));
+//     *my_long_long = 100;
+//     std::cout << sizeof(*my_long_long) << std::endl;
+
+//     // create tmp arena
+//     Temp_Arena tmp {};
+//     // begin arena
+//     tmp.temp_begin(&a);
+//     // allocate memory for a new int
+//     auto tmp_int = (int*) a.alloc(sizeof(int));
+//     *tmp_int = 30;
+//     // end tmp arena
+//     tmp.temp_end();
+
+//     std::cout << *tmp_int << std::endl;
+
+//     // allocate memory for an array<int, 50>
+//     auto arr = (std::array<int, 50>*) a.alloc(sizeof(std::array<int, 50>));
+//     *arr = std::array<int, 50> {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+//     std::cout << (*arr) << std::endl;
+
+//     // free memory of arena
+//     a.free_all();
+// }
