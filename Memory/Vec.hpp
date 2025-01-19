@@ -302,7 +302,6 @@ public:
                     m_vec[i] = val;
             }
         }
-        
 
         ++m_len;
     }
