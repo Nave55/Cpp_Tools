@@ -1,31 +1,31 @@
 #pragma once
+
 #include <cstddef>
 #include <initializer_list>
 #include <iostream>
 #include <assert.h>
 #include <algorithm>
+#include <cstring>
 
 template <typename T>
 class Vec {
 private:
-    T* m_vec;
-    size_t m_len;
-    size_t m_capacity;
+    T *m_vec {nullptr};
+    size_t m_len {0};
+    size_t m_capacity {0};
 
 public:
     explicit Vec() 
         : m_vec{new T[10]}, m_len{0}, m_capacity{10} {
-            for (size_t i = 0; i < m_len; i++) m_vec[i] = 0;
     }
 
     explicit Vec(size_t sz) 
-        : m_vec{new T[sz]}, m_len{sz}, m_capacity{sz} {
-            for (size_t i = 0; i < sz; i++) m_vec[i] = 0;
+        : m_vec{new T[sz](T())}, m_len{sz}, m_capacity{sz} {
     }
 
     explicit Vec(size_t sz, size_t cap) 
-        : m_vec{new T[std::max(sz, cap)]}, m_len{sz}, m_capacity{std::max(cap, sz)} {
-            for (size_t i = 0; i < sz; i++) m_vec[i] = 0;
+        : m_vec{new T[std::max(sz, cap)](T())}, m_len{sz}, m_capacity{std::max(cap, sz)} {
+            // memset(m_vec, T(), sizeof(T) * sz);
     }
 
     explicit Vec(std::initializer_list<T> lst) 
@@ -34,11 +34,12 @@ public:
     }
 
     explicit Vec(std::initializer_list<T> lst, size_t cap) 
-        : m_vec{new T[std::max(cap, lst.size())]}, m_len{lst.size()}, m_capacity{std::max(cap, lst.size())} { 
+        : m_vec{new T[std::max(cap, lst.size())]}, m_len{lst.size()}, m_capacity{std::max(cap, lst.size())} {
             std::copy(lst.begin(), lst.end(), m_vec);
     }
 
-    Vec(Vec&& other) noexcept : m_vec{other.m_vec}, m_len{other.m_len} {
+    Vec(Vec&& other) noexcept 
+    : m_vec{other.m_vec}, m_len{other.m_len} {
         other.m_vec = nullptr;
         other.m_len = 0;
         other.m_capacity = 0;
@@ -105,7 +106,9 @@ public:
 
     auto last() const -> T { return m_vec[m_len - 1]; }
 
-    auto clear() -> void { for (size_t i = 0; i < m_len; i++) m_vec[i] = 0; }
+    auto clear() -> void { for (size_t i = 0; i < m_len; i++) m_vec[i] = T(); }
+
+    auto fill(T val) -> void { std::fill(m_vec, m_vec + m_len, val); }
 
     auto sort_vec() -> void { std::sort(begin(), end()); }
 
@@ -132,14 +135,19 @@ public:
 
     auto resize(size_t sz) -> void {
         if (sz == m_len) return;
+        if (sz < m_len) {
+            m_len = sz;
+            return;
+        }
 
         // Allocate new memory
-        T* new_m_vec = new T[sz];
+        T* new_m_vec = new T[sz](T());
 
         // Move elements from old m_vec and zero the rest
+        // memcpy(new_m_vec, m_vec, sz * sizeof(T));
         for (size_t i = 0; i < sz; i++) {
             if (i < m_len) new_m_vec[i] = std::move(m_vec[i]);
-            else new_m_vec[i] = 0;
+            else new_m_vec[i] = T();
         }
 
         // Free the old memory
@@ -154,6 +162,9 @@ public:
     auto reserve(size_t capacity) -> void {
         if (capacity > m_capacity) {
             T* new_m_vec = new T[capacity];
+            
+            // cpy existing elements
+            // memcpy(new_m_vec, m_vec, m_len * sizeof(T));
             for (size_t i = 0; i < m_len; ++i) 
                 new_m_vec[i] = std::move(m_vec[i]);
             
@@ -166,22 +177,33 @@ public:
     auto shrink_to_fit() -> void {
         if (m_len > 0 && m_len < m_capacity) {
             T* new_m_vec = new T[m_len];
+
+            // Copy existing elements
+            // memcpy(new_m_vec, m_vec, m_len * sizeof(T));
             for (size_t i = 0; i < m_len; ++i) {
                 new_m_vec[i] = std::move(m_vec[i]);
             }
+
             delete[] m_vec;
             m_vec = new_m_vec;
             m_capacity = m_len;
         }
     }
 
-    auto push_back(T val) -> void {
+    template <typename S>
+    auto push_back(S val) -> void {
+        if constexpr (!std::is_same<decltype(val), T>::value) {
+            std::cout << "push_back failed: Type mismatch. Expected " << typeid(T).name() << ", got " << typeid(val).name() << "\n";
+            return;
+        }
+        
         // Check if the current capacity is equal to the length of the vector
         if (m_capacity == m_len) {
             // Allocate new memory with double the capacity
             T* new_m_vec = new T[m_capacity * 2 ];
 
             // Copy existing elements
+            // memcpy(new_m_vec, m_vec, m_len * sizeof(T));
             for (size_t i = 0; i < m_len; ++i)
                 new_m_vec[i] = std::move(m_vec[i]);
 
@@ -190,7 +212,7 @@ public:
 
             // Update the m_vector pointer and capacity
             m_vec = new_m_vec;
-            m_capacity = std::max(static_cast<size_t>(10), m_capacity * 2);
+            m_capacity *= 2;
         }
 
         // Check if m_len is within the bounds of the array
@@ -207,12 +229,26 @@ public:
 
     template <typename... Args>
     auto emplace_back(Args&&... args) -> void {
+        // Ensure that T is constructible from the given arguments
+        if constexpr (!std::is_constructible<T, Args&&...>::value) {
+            std::cout << "emplace_back failed: Type mismatch. Cannot construct type " << typeid(T).name()
+                      << " with provided arguments.\n";
+            return;
+        }
+
+        // Prevent unintended implicit conversions by checking exact matches
+        if constexpr (!(std::is_same_v<T, std::decay_t<Args>> && ...)) {
+            std::cout << "emplace_back failed: Argument types are not an exact match for " << typeid(T).name() << "\n";
+            return;
+        }
+
         // Check if the current capacity is equal to the length of the vector
         if (m_capacity == m_len) {
             // Allocate new memory with double the capacity
             T* new_m_vec = new T[m_capacity * 2];
 
             // Copy existing elements
+            // memcpy(new_m_vec, m_vec, m_len * sizeof(T));
             for (size_t i = 0; i < m_len; ++i)
                 new_m_vec[i] = std::move(m_vec[i]);
 
@@ -221,7 +257,7 @@ public:
 
             // Update the m_vector pointer and capacity
             m_vec = new_m_vec;
-            m_capacity = std::max(static_cast<size_t>(10), m_capacity * 2);
+            m_capacity *= 2;
         }
 
         // Emplace the new element
@@ -240,40 +276,8 @@ public:
         ++m_len;
     }
 
-    template <typename... Args>
-    auto emplace(size_t index, Args&&... args) -> void {
-        // Check if the index is within bounds
-        if (index > m_len) {
-            throw std::out_of_range("Index out of range");
-        }
-
-        // Check if the current capacity is equal to the length of the vector
-        if (m_capacity == m_len) {
-            // Allocate new memory with double the capacity
-            T* new_m_vec = new T[m_capacity * 2];
-
-            // Copy existing elements
-            for (size_t i = 0; i < m_len; ++i)
-                new_m_vec[i] = std::move(m_vec[i]);
-
-            // Free the old memory
-            delete[] m_vec;
-
-            // Update the m_vector pointer and capacity
-            m_vec = new_m_vec;
-            m_capacity = std::max(static_cast<size_t>(10), m_capacity * 2);
-        }
-    }
-
     auto insert(T val, size_t ind) -> void {
-        if (m_capacity == 0 || ind >= m_len) {
-            if (m_capacity == 0 || ind == m_len) 
-                std::cout << "Please use push_back() to add elements to the vector of this size\n";
-            else 
-                std::cout << "Index out of range for insert\n";         
-            return;   
-        }
-
+        if (m_capacity == 0) return;
         if (m_capacity == m_len) {
             // Allocate new memory
             T* new_m_vec = new T[m_len * 2];
@@ -291,7 +295,7 @@ public:
 
             // Update the m_vector pointer and size
             m_vec = new_m_vec;
-            m_capacity = std::max(static_cast<size_t>(10), m_capacity * 2);
+            m_capacity = m_len * 2;
         } 
         else {
             // Shift elements to the right to make room for the new element
@@ -310,7 +314,7 @@ public:
         assert(m_len > 0);
 
         // set the last element to 0
-        m_vec[m_len - 1] = 0;
+        m_vec[m_len - 1] = T();
 
         // decrement the length
         --m_len; 
@@ -320,10 +324,10 @@ public:
         assert(m_len > 0);
 
         // Get the last element
-        auto val = m_vec[m_len - 1];
+        T val = m_vec[m_len - 1];
 
         // set the last element to 0
-        m_vec[m_len - 1] = 0;
+        m_vec[m_len - 1] = T();
 
         // decrement the length
         --m_len; 
@@ -331,10 +335,11 @@ public:
         return val;
     }
 
+
     auto ordered_remove(size_t ind) -> void {
         if (ind >= m_len || m_len == 0) return;
 
-        if (m_len == 1) m_vec[0] = 0;
+        if (m_len == 1) pop_back();
         else {
             // shift elements to the left
             for (size_t i = ind; i < m_len - 1; ++i) 
