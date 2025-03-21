@@ -4,7 +4,7 @@
 #include <cassert>
 #include <cstring>
 
-constexpr auto DEFAULT_ALIGNMENT = 2 * sizeof(void*);
+constexpr const auto DEFAULT_ALIGNMENT = 2 * sizeof(void*);
 
 /**
  * Check if a given number is a power of two.
@@ -18,7 +18,7 @@ constexpr auto DEFAULT_ALIGNMENT = 2 * sizeof(void*);
  * exactly one bit set to 1, and all other bits set to 0.
  */
 
-auto is_power_of_two(const uintptr_t &x) -> bool {
+constexpr auto is_power_of_two(const uintptr_t &x) -> bool {
 	return (x & (x - 1)) == 0;
 }
 
@@ -30,15 +30,14 @@ auto is_power_of_two(const uintptr_t &x) -> bool {
  * @param align The alignment to be used.
  * @returns The aligned pointer.
  */
-auto align_forward(const uintptr_t &ptr, const size_t &align) -> uintptr_t {
+constexpr auto align_forward(const uintptr_t &ptr, const size_t &align) -> uintptr_t {
 	uintptr_t p, a, modulo;
 
 	assert(is_power_of_two(align));
 
 	p = ptr;
 	a = (uintptr_t) align;
-	// Same as (p % a) but faster as 'a' is a power of two
-	modulo = p & (a - 1);
+	modulo = p & (a - 1); // Same as (p % a) but faster as 'a' is a power of two
 
 	if (modulo != 0) {
 		// If 'p' address is not aligned, push the address to the
@@ -61,9 +60,8 @@ struct Arena {
      * @param prev The initial value of prev_offset.
      * @param curr The initial value of curr_offset.
      */
-    Arena(size_t buf_size = 256, size_t prev = 0, size_t curr = 0)
-        : buf((unsigned char *) malloc(buf_size)), buf_len(buf_size), prev_offset(prev), curr_offset(curr) {
-            std::cout << "Arena created of size: " << buf_size <<  "\n";
+    Arena(size_t buf_size = 1024, size_t prev = 0, size_t curr = 0)
+        : buf{(unsigned char *) malloc(buf_size)}, buf_len{buf_size}, prev_offset{prev}, curr_offset{curr} {
         }
 
     /**
@@ -78,14 +76,42 @@ struct Arena {
      * @returns A pointer to the allocated memory block, or NULL if the
      * memory block is out of bounds of the arena.
      */
+
+    /**
+     * Deallocate all the memory allocated by this arena.
+     *
+     * @details
+     * This will deallocate the memory allocated by this arena. It will also
+     * reset the `prev_offset` and `curr_offset` to 0, effectively resetting the
+     * arena to its state after construction.
+     */
+    ~Arena() {
+        free(buf);
+    }
+
+    /**
+     * Allocates a block of memory from the arena with the specified size and alignment.
+     * 
+     * This function aligns the current offset forward to the specified alignment and checks
+     * if there is enough space available in the arena to allocate the memory block. If there
+     * is sufficient space, it returns a pointer to the newly allocated and zero-initialized
+     * memory block. If the arena is out of memory, it returns NULL.
+     *
+     * @param size The size of the memory block to be allocated.
+     * @param align The alignment of the memory block to be allocated. Defaults to DEFAULT_ALIGNMENT.
+     * @return A pointer to the allocated memory block or NULL if the arena does not have enough space.
+     */
+
     auto alloc(size_t size, size_t align = DEFAULT_ALIGNMENT) -> void* {
-	// Align 'curr_offset' forward to the specified alignment
+        assert(curr_offset + size <= buf_len && "Memory Allocation overflow");
+
+        // Align 'curr_offset' forward to the specified alignment
         uintptr_t curr_ptr = (uintptr_t) buf + (uintptr_t) curr_offset;
         uintptr_t offset = align_forward(curr_ptr, align);
         offset -= (uintptr_t) buf; // Change to relative offset
 
         // Check to see if the backing memory has space left
-        if (offset+size <= buf_len) {
+        if (offset + size <= buf_len) {
             void *ptr = &buf[offset];
             prev_offset = offset;
             curr_offset = offset+size;
@@ -94,8 +120,9 @@ struct Arena {
             memset(ptr, 0, size);
             return ptr;
         }
-	    // Return NULL if the arena is out of memory (or handle differently)
-	    return NULL;
+
+        // Return NULL if the arena is out of memory (or handle differently)
+        return NULL;
     }
 
     /**
@@ -115,6 +142,7 @@ struct Arena {
      * block is out of bounds of the arena.
      */
     auto resize(void *old_memory, size_t old_size, size_t new_size, size_t align = DEFAULT_ALIGNMENT) -> void* {
+        assert(curr_offset + new_size <= buf_len && "Memory Allocation overflow");
         unsigned char *old_mem = (unsigned char *) old_memory;
 
         assert(is_power_of_two(align));
@@ -131,6 +159,11 @@ struct Arena {
                 return old_memory;
             } else {
                 void *new_memory = alloc(new_size, align);
+                if (!new_memory) {
+                    // Handle allocation failure
+                    assert(0 && "Failed to allocate memory for resizing");
+                    return NULL;
+                }
                 size_t copy_size = old_size < new_size ? old_size : new_size;
                 // Copy across old memory to the new memory
                 memmove(new_memory, old_memory, copy_size);
@@ -148,8 +181,8 @@ struct Arena {
      * the arena. 
      */
     auto free_all() -> void {
-	    curr_offset = 0;
-	    prev_offset = 0;
+        curr_offset = 0;
+        prev_offset = 0;
     }
 };
 
