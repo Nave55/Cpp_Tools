@@ -61,7 +61,8 @@ public:
     template<typename T>
     auto alloc(size_t count = 1, size_t alignment = alignof(T)) -> T* {
         size_t bytes = sizeof(T) * count;
-        if (bytes == 0) return nullptr;             
+        if (bytes == 0) return nullptr;   
+                  
         void* p = m_buf + m_curr_off;
         size_t space = m_buf_len - m_curr_off;
         if (!std::align(alignment, bytes, p, space))
