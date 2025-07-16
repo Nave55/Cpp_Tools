@@ -13,7 +13,7 @@ constexpr size_t KB =                1024ULL;
 constexpr size_t MB =                KB * 1024ULL;
 constexpr size_t GB =                MB * 1024ULL;
 
-constexpr bool is_power_of_two(const size_t x) {
+constexpr auto is_power_of_two(const size_t x) -> bool {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
@@ -76,7 +76,7 @@ public:
 
 /// Resize from Old→New, where you know old_count/new_count in elements
     template<typename Old, typename New>
-    New* resize(Old* old_mem, size_t old_count, size_t new_count, size_t alignment = alignof(New)) {
+    auto resize(Old* old_mem, size_t old_count, size_t new_count, size_t alignment = alignof(New)) -> New* {
         size_t old_bytes = sizeof(Old) * old_count;
         size_t new_bytes = sizeof(New) * new_count;
 
