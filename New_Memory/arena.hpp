@@ -59,42 +59,43 @@ public:
     }
 
     template<typename T>
-    auto alloc(size_t alignment = alignof(T), size_t size = sizeof(T)) -> T* {
-        if (size == 0) return nullptr;
-        static_assert(is_power_of_two(DEFAULT_ALIGNMENT), "DEFAULT_ALIGNMENT must be a power of two");
-
-        void*  ptr   = m_buf + m_curr_off;
+    T* alloc(size_t count = 1, size_t alignment = alignof(T)) {
+        size_t bytes = sizeof(T) * count;
+        if (bytes == 0) return nullptr;             
+        void* p = m_buf + m_curr_off;
         size_t space = m_buf_len - m_curr_off;
-        if (!std::align(alignment, size, ptr, space)) {
-            return nullptr;  // or throw std::bad_alloc{};
-        }
-        m_prev_off = static_cast<unsigned char*>(ptr) - m_buf;
-        m_curr_off = m_prev_off + size;
-        std::memset(ptr, 0, size);
-        return static_cast<T*>(ptr);
+        if (!std::align(alignment, bytes, p, space))
+            return nullptr;
+        m_prev_off = static_cast<unsigned char*>(p) - m_buf;
+        m_curr_off = m_prev_off + bytes;
+        std::memset(p, 0, bytes);
+        return static_cast<T*>(p);
     }
 
-    // Resize an instance E.g. resize<MyNewType>(ptr, old_size, new_size, alignment.
-    template<typename N>
-    auto resize(void* old_mem, size_t old_size, size_t new_size = sizeof(N),  size_t alignment = alignof(N)) -> N* {
+    template<typename T>
+    T* resize(T* old_mem, size_t old_count, size_t new_count, size_t alignment = alignof(T)) {
+        size_t old_bytes = sizeof(T) * old_count;
+        size_t new_bytes = sizeof(T) * new_count;
+        if (!old_mem || old_bytes == 0)
+            return alloc<T>(new_count, alignment);
 
-        if (!old_mem || old_size == 0)
-            return alloc<N>(alignment);
-
-        unsigned char* p    = static_cast<unsigned char*>(old_mem);
-        size_t         off  = p - m_buf;
+        auto p = reinterpret_cast<unsigned char*>(old_mem);
+        size_t off = p - m_buf;
+        // in‑place if it’s the last allocation
         if (off == m_prev_off &&
-            m_curr_off - m_prev_off + (new_size - old_size) <= m_buf_len - m_prev_off) {
-            m_curr_off = m_prev_off + new_size;
-            if (new_size > old_size)
-            std::memset(m_buf + m_curr_off - (new_size - old_size), 0, new_size - old_size);
-            return static_cast<N*>(old_mem); // old_mem;
+            (m_curr_off - m_prev_off + (new_bytes - old_bytes)) <= (m_buf_len - m_prev_off))
+        {
+            m_curr_off = m_prev_off + new_bytes;
+            if (new_bytes > old_bytes)
+                std::memset(m_buf + m_curr_off - (new_bytes - old_bytes),
+                            0, new_bytes - old_bytes);
+            return old_mem;
         }
-
-        void* newp = alloc<N>(alignment);
-        if (!newp) return nullptr; // or throw
-        std::memmove(newp, old_mem, std::min(old_size, new_size));
-        return static_cast<N*>(newp);
+        // otherwise bump‑allocate a fresh block and copy
+        T* newp = alloc<T>(new_count, alignment);
+        if (!newp) return nullptr;
+        std::memmove(newp, old_mem, std::min(old_bytes, new_bytes));
+        return newp;
     }
 
     auto free_all() noexcept {
@@ -110,10 +111,10 @@ private:
 
 public:
     TempArena(Arena& a)
-        : arena(a),
-        m_prev_off(a.m_prev_off),
-        m_curr_off(a.m_curr_off)
-    {}
+        : arena(a)
+        , m_prev_off(a.m_prev_off)
+        , m_curr_off(a.m_curr_off)
+        {}
 
     ~TempArena() {
         arena.m_prev_off = m_prev_off;
