@@ -9,9 +9,9 @@
 #include <iostream>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
-constexpr size_t KB = 1024ULL;
-constexpr size_t MB = KB * 1024ULL;
-constexpr size_t GB = MB * 1024ULL;
+constexpr size_t KB =                1024ULL;
+constexpr size_t MB =                KB * 1024ULL;
+constexpr size_t GB =                MB * 1024ULL;
 
 constexpr bool is_power_of_two(const size_t x) {
   return x != 0 && (x & (x - 1)) == 0;
@@ -73,28 +73,26 @@ public:
     }
 
     template<typename T>
-    T* resize(T* old_mem, size_t old_count, size_t new_count, size_t alignment = alignof(T)) {
-        size_t old_bytes = sizeof(T) * old_count;
-        size_t new_bytes = sizeof(T) * new_count;
-        if (!old_mem || old_bytes == 0)
-            return alloc<T>(new_count, alignment);
+    T* resize(T* old_mem, size_t old_size, size_t new_size = sizeof(T), size_t alignment = alignof(T)) {
+        if (!old_mem || old_size == 0)
+            return alloc<T>(new_size, alignment);
 
         auto p = reinterpret_cast<unsigned char*>(old_mem);
         size_t off = p - m_buf;
         // in‑place if it’s the last allocation
         if (off == m_prev_off &&
-            (m_curr_off - m_prev_off + (new_bytes - old_bytes)) <= (m_buf_len - m_prev_off))
+            (m_curr_off - m_prev_off + (new_size - old_size)) <= (m_buf_len - m_prev_off))
         {
-            m_curr_off = m_prev_off + new_bytes;
-            if (new_bytes > old_bytes)
-                std::memset(m_buf + m_curr_off - (new_bytes - old_bytes),
-                            0, new_bytes - old_bytes);
+            m_curr_off = m_prev_off + new_size;
+            if (new_size > old_size)
+                std::memset(m_buf + m_curr_off - (new_size - old_size),
+                            0, new_size - old_size);
             return old_mem;
         }
         // otherwise bump‑allocate a fresh block and copy
-        T* newp = alloc<T>(new_count, alignment);
+        T* newp = alloc<T>(new_size, alignment);
         if (!newp) return nullptr;
-        std::memmove(newp, old_mem, std::min(old_bytes, new_bytes));
+        std::memmove(newp, old_mem, std::min(old_size, new_size));
         return newp;
     }
 
