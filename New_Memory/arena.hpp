@@ -13,6 +13,22 @@ constexpr size_t KB =                1024ULL;
 constexpr size_t MB =                KB * 1024ULL;
 constexpr size_t GB =                MB * 1024ULL;
 
+/**
+ * \brief Returns true if the given size_t is a power of two.
+ *
+ * A power of two is any number that can be written as 2^n, where n is a
+ * non-negative integer. This function is useful for checking if a given size
+ * is a power of two, since it can be an important property for memory
+ * allocation and other performance-critical code.
+ *
+ * This function is a no-op at runtime, and is entirely evaluated at compile
+ * time. The function is also marked `constexpr`, meaning that the result can
+ * be used in constant expressions.
+ *
+ * \param[in] x The size_t to check.
+ *
+ * \return True if the given size_t is a power of two, false otherwise.
+ */
 constexpr auto is_power_of_two(const size_t x) -> bool {
   return x != 0 && (x & (x - 1)) == 0;
 }
@@ -26,12 +42,28 @@ private:
     size_t         m_curr_off  = 0;
 
 public:
+    /**
+     * Constructs an Arena object with a buffer of given size.
+     *
+     * The arena allocates a single block of memory of size buf_size
+     * which is used for all allocations. The memory is aligned to
+     * DEFAULT_ALIGNMENT bytes.
+     *
+     * @param buf_size The size of the allocation buffer (default: MB).
+     */
     Arena(size_t buf_size = MB)
     : m_buf_len(buf_size) {
         m_buf = static_cast<unsigned char*>(
             ::operator new[](m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT})
         );
     }
+
+    /**
+     * Destructs the Arena object, deallocating the buffer.
+     *
+     * The destructor releases the memory allocated for the buffer
+     * and outputs a message indicating that the Arena has been destroyed.
+     */
 
     ~Arena() {
         ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
@@ -47,7 +79,7 @@ public:
             o.m_buf = nullptr;
             o.m_buf_len = 0;
         }
-
+        
     Arena& operator=(Arena&& o) noexcept {
         if (this != &o) {
             ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
@@ -58,6 +90,13 @@ public:
         return *this;
     }
 
+    /**
+     * Allocate memory block of size count * sizeof(T) in the arena.
+     * @param count The number of elements to allocate (default: 1).
+     * @param alignment The alignment requirement of the type (default: alignof(T)).
+     * @return A pointer to the allocated memory or nullptr if the request exceeds the arena size.
+     * @remark The memory is cleared before returning.
+     */
     template<typename T>
     auto alloc(size_t count = 1, size_t alignment = alignof(T)) -> T* {
         size_t bytes = sizeof(T) * count;
@@ -73,9 +112,16 @@ public:
         return static_cast<T*>(p);
     }
 
-    // in Arena, next to your existing template<T> alloc/resize…
-
-/// Resize from Old→New, where you know old_count/new_count in elements
+    /**
+     * Resize an allocation in the arena from Old to New.
+     * @param old_mem The existing allocation to resize (or nullptr to allocate a new block).
+     * @param old_count The number of elements in the existing allocation (default: 1).
+     * @param new_count The number of elements to allocate for the new block (default: 1).
+     * @param alignment The alignment requirement of the new block (default: alignof(New)).
+     * @return A pointer to the resized block or nullptr if the request exceeds the arena size.
+     * @remark The memory is cleared before returning. If the new size is smaller than the old size,
+     * the trailing bytes of the old block are left untouched.
+     */
     template<typename Old, typename New>
     auto resize(Old* old_mem, size_t old_count = 1, size_t new_count = 1, size_t alignment = alignof(New)) -> New* {
         size_t old_bytes = sizeof(Old) * old_count;
@@ -107,24 +153,45 @@ public:
     }
 
 
+    /**
+     * Frees all allocations in the arena. This is more efficient than calling `free` on each
+     * allocation, as it doesn't check if the allocation is valid each time. However, it does
+     * not reset the arena's internal state, so you can't call `free_all` then continue
+     * allocating as if nothing had happened.
+     */
     auto free_all() noexcept -> void {
         m_prev_off = m_curr_off = 0;
     }
 
 };
 
+// Arena for temporary allocations. Raii resets arena on scope exit to original arena.
 class TempArena {
 private:
     Arena& arena;
     size_t m_prev_off, m_curr_off;
 
 public:
+/**
+ * Constructs a TempArena that temporarily uses the given Arena for allocations.
+ * The TempArena saves the current state of the Arena's offsets, allowing it to
+ * reset them upon destruction to ensure temporary allocations do not persist.
+ *
+ * @param a Reference to the Arena object used for temporary allocations.
+ */
+
     TempArena(Arena& a)
         : arena(a)
         , m_prev_off(a.m_prev_off)
         , m_curr_off(a.m_curr_off)
         {}
 
+    /**
+     * Destructor. Resets arena's internal state to its original state at the moment
+     * of TempArena construction. This ensures that any allocations made while the
+     * TempArena was alive are freed and do not persist after the TempArena is
+     * destroyed.
+     */
     ~TempArena() {
         arena.m_prev_off = m_prev_off;
         arena.m_curr_off = m_curr_off;
