@@ -6,6 +6,7 @@
 #include <cstring>
 #include <algorithm>   // for std::min
 #include <memory>      // for std::align
+#include <iostream>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
 constexpr size_t KB = 1024ULL;
@@ -34,6 +35,7 @@ public:
 
     ~Arena() {
         ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
+        std::cout << "Arena destroyed\n";
     }
 
     Arena(const Arena&)            = delete;
@@ -57,8 +59,7 @@ public:
     }
 
     template<typename T>
-    auto alloc(size_t alignment = alignof(T)) -> T* {
-        auto size = sizeof(T);
+    auto alloc(size_t alignment = alignof(T), size_t size = sizeof(T)) -> T* {
         if (size == 0) return nullptr;
         static_assert(is_power_of_two(DEFAULT_ALIGNMENT), "DEFAULT_ALIGNMENT must be a power of two");
 
@@ -73,11 +74,9 @@ public:
         return static_cast<T*>(ptr);
     }
 
-    // Resize an instance of O → N. E.g. resize<MyOldType MyNewType,>(ptr).
-    template<typename O, typename N>
-    auto resize(void* old_mem, size_t alignment = alignof(N)) -> N* {
-        size_t old_size = sizeof(O);
-        size_t new_size = sizeof(N);
+    // Resize an instance E.g. resize<MyNewType>(ptr, old_size, new_size, alignment.
+    template<typename N>
+    auto resize(void* old_mem, size_t old_size, size_t new_size = sizeof(N),  size_t alignment = alignof(N)) -> N* {
 
         if (!old_mem || old_size == 0)
             return alloc<N>(alignment);
