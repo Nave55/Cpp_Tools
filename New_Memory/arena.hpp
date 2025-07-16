@@ -59,7 +59,7 @@ public:
     }
 
     template<typename T>
-    T* alloc(size_t count = 1, size_t alignment = alignof(T)) {
+    auto alloc(size_t count = 1, size_t alignment = alignof(T)) -> T* {
         size_t bytes = sizeof(T) * count;
         if (bytes == 0) return nullptr;             
         void* p = m_buf + m_curr_off;
@@ -72,31 +72,41 @@ public:
         return static_cast<T*>(p);
     }
 
-    template<typename T>
-    T* resize(T* old_mem, size_t old_size, size_t new_size = sizeof(T), size_t alignment = alignof(T)) {
-        if (!old_mem || old_size == 0)
-            return alloc<T>(new_size, alignment);
+    // in Arena, next to your existing template<T> alloc/resize…
 
-        auto p = reinterpret_cast<unsigned char*>(old_mem);
+/// Resize from Old→New, where you know old_count/new_count in elements
+    template<typename Old, typename New>
+    New* resize(Old* old_mem, size_t old_count, size_t new_count, size_t alignment = alignof(New)) {
+        size_t old_bytes = sizeof(Old) * old_count;
+        size_t new_bytes = sizeof(New) * new_count;
+
+        if (!old_mem || old_count == 0)
+            return alloc<New>(new_count, alignment);
+
+        auto p   = reinterpret_cast<unsigned char*>(old_mem);
         size_t off = p - m_buf;
-        // in‑place if it’s the last allocation
+
+        // in‑place if it’s the last alloc and fits
         if (off == m_prev_off &&
-            (m_curr_off - m_prev_off + (new_size - old_size)) <= (m_buf_len - m_prev_off))
+            m_curr_off - m_prev_off + (new_bytes - old_bytes) <= (m_buf_len - m_prev_off))
         {
-            m_curr_off = m_prev_off + new_size;
-            if (new_size > old_size)
-                std::memset(m_buf + m_curr_off - (new_size - old_size),
-                            0, new_size - old_size);
-            return old_mem;
+            m_curr_off = m_prev_off + new_bytes;
+            if (new_bytes > old_bytes)
+                std::memset(m_buf + m_curr_off - (new_bytes - old_bytes),
+                            0, new_bytes - old_bytes);
+            return reinterpret_cast<New*>(p);
         }
-        // otherwise bump‑allocate a fresh block and copy
-        T* newp = alloc<T>(new_size, alignment);
+
+        // otherwise bump‑allocate fresh
+        New* newp = alloc<New>(new_count, alignment);
         if (!newp) return nullptr;
-        std::memmove(newp, old_mem, std::min(old_size, new_size));
+        // copy the smaller of old_bytes/new_bytes
+        std::memmove(newp, old_mem, std::min(old_bytes, new_bytes));
         return newp;
     }
 
-    auto free_all() noexcept {
+
+    auto free_all() noexcept -> void {
         m_prev_off = m_curr_off = 0;
     }
 
