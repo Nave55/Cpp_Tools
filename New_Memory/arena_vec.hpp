@@ -156,7 +156,7 @@ public:
         size_t new_alloc_bytes = (new_size * 2) * sizeof(T);
 
         // resize allocation
-        T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+        T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
         assert(new_m_vec && "Arena resize failed!");
 
         // zero out new elements
@@ -178,7 +178,7 @@ public:
             size_t new_alloc_bytes = new_size * sizeof(T);
 
             // resize allocation
-            T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+            T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
             assert(new_m_vec && "Arena resize failed!");
 
             // Update the m_vector pointer and capacity
@@ -195,7 +195,7 @@ public:
             size_t new_alloc_bytes = m_len * sizeof(T);
 
             // resize allocation
-            T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+            T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
             assert(new_m_vec && "Arena resize failed!");
 
             // Update the m_vector pointer and capacity
@@ -219,7 +219,7 @@ public:
             size_t new_alloc_bytes = (m_capacity * 2) * sizeof(T);
             
             // resize allocation
-            T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+            T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
             assert(new_m_vec && "Arena resize failed!");
             
             // Update the m_vector pointer and capacity
@@ -249,7 +249,7 @@ public:
             size_t new_alloc_bytes = (m_capacity * 2) * sizeof(T);
 
             // resize allocation
-            T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+            T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
             assert(new_m_vec && "Arena resize failed!");
 
             // Update the vector pointer and capacity
@@ -273,7 +273,7 @@ public:
             size_t new_alloc_bytes = m_capacity * 2 * sizeof(T);
 
             // resize allocation
-            T* new_m_vec = m_arena->resize<T, T>(m_vec, old_alloc_bytes, new_alloc_bytes);
+            T* new_m_vec = m_arena->resize<T>(m_vec, old_alloc_bytes, new_alloc_bytes);
             assert(new_m_vec && "Arena resize failed!");
 
             // Update the m_vector pointer and capacity
