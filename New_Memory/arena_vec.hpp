@@ -27,7 +27,7 @@ public:
             for (size_t i = 0; i < sz; ++i) {
                 m_vec[i] = T();
             }
-    }
+        }
 
     explicit Vec(Arena &arena, size_t sz, size_t cap)
         : m_arena{&arena}    
@@ -37,7 +37,7 @@ public:
             for (size_t i = 0; i < sz; ++i) {
                 m_vec[i] = T();
             }
-    }
+        }
 
     explicit Vec(Arena &arena, std::initializer_list<T> lst)
         : m_arena{&arena} 
@@ -45,7 +45,7 @@ public:
         , m_len{lst.size()}
         , m_capacity{lst.size()} {
             std::copy(lst.begin(), lst.end(), m_vec);
-    }
+        }
 
     explicit Vec(Arena &arena, std::initializer_list<T> lst, size_t cap)
         : m_arena{&arena} 
@@ -53,7 +53,7 @@ public:
         , m_len{lst.size()}
         , m_capacity{std::max(cap, lst.size())} {
             std::copy(lst.begin(), lst.end(), m_vec);
-    }
+        }
 
     auto operator[](size_t i) -> T& {
         // assert(i < m_len);
