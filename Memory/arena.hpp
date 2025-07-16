@@ -8,11 +8,11 @@
 #include <memory>      // for std::align
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
-const int KB = 1024;
-const int MB = KB * 1024;
-const int GB = MB * 1024;
+constexpr size_t KB = 1024ULL;
+constexpr size_t MB = KB * 1024ULL;
+constexpr size_t GB = MB * 1024ULL;
 
-constexpr bool is_power_of_two(size_t x) {
+constexpr bool is_power_of_two(const size_t x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
@@ -41,8 +41,7 @@ public:
 
     Arena(Arena&& o) noexcept
         : m_buf(o.m_buf), m_buf_len(o.m_buf_len)
-        , m_prev_off(o.m_prev_off), m_curr_off(o.m_curr_off) 
-        {
+        , m_prev_off(o.m_prev_off), m_curr_off(o.m_curr_off) {
             o.m_buf = nullptr;
             o.m_buf_len = 0;
         }
@@ -57,8 +56,12 @@ public:
         return *this;
     }
 
-    auto alloc(size_t size, size_t alignment = DEFAULT_ALIGNMENT) -> void* {
-        assert(is_power_of_two(alignment));
+    template<typename T>
+    auto alloc(size_t alignment = alignof(T)) -> T* {
+        auto size = sizeof(T);
+        if (size == 0) return nullptr;
+        static_assert(is_power_of_two(DEFAULT_ALIGNMENT), "DEFAULT_ALIGNMENT must be a power of two");
+
         void*  ptr   = m_buf + m_curr_off;
         size_t space = m_buf_len - m_curr_off;
         if (!std::align(alignment, size, ptr, space)) {
@@ -67,12 +70,17 @@ public:
         m_prev_off = static_cast<unsigned char*>(ptr) - m_buf;
         m_curr_off = m_prev_off + size;
         std::memset(ptr, 0, size);
-        return ptr;
+        return static_cast<T*>(ptr);
     }
 
-    auto resize(void* old_mem, size_t old_size, size_t new_size, size_t alignment = DEFAULT_ALIGNMENT) -> void* {
+    // Resize an instance of O → N. E.g. resize<MyOldType MyNewType,>(ptr).
+    template<typename O, typename N>
+    auto resize(void* old_mem, size_t alignment = alignof(N)) -> N* {
+        size_t old_size = sizeof(O);
+        size_t new_size = sizeof(N);
+
         if (!old_mem || old_size == 0)
-            return alloc(new_size, alignment);
+            return alloc<N>(alignment);
 
         unsigned char* p    = static_cast<unsigned char*>(old_mem);
         size_t         off  = p - m_buf;
@@ -81,13 +89,13 @@ public:
             m_curr_off = m_prev_off + new_size;
             if (new_size > old_size)
             std::memset(m_buf + m_curr_off - (new_size - old_size), 0, new_size - old_size);
-            return old_mem;
+            return static_cast<N*>(old_mem); // old_mem;
         }
 
-        void* newp = alloc(new_size, alignment);
+        void* newp = alloc<N>(alignment);
         if (!newp) return nullptr; // or throw
         std::memmove(newp, old_mem, std::min(old_size, new_size));
-        return newp;
+        return static_cast<N*>(newp);
     }
 
     auto free_all() noexcept {
