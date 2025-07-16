@@ -1,10 +1,6 @@
 #pragma once
 
-#include <cstddef>
 #include <initializer_list>
-#include <assert.h>
-#include <algorithm>
-#include <cstring>
 #include "arena.hpp"
 
 template <typename T>
