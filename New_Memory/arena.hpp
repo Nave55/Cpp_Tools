@@ -13,18 +13,6 @@ constexpr size_t KB =                1024ULL;
 constexpr size_t MB =                KB * 1024ULL;
 constexpr size_t GB =                MB * 1024ULL;
 
-/**
- * \brief Returns true if the given size_t is a power of two.
- *
- * A power of two is any number that can be written as 2^n, where n is a
- * non-negative integer. This function is useful for checking if a given size
- * is a power of two, since it can be an important property for memory
- * allocation and other performance-critical code.
- *
- * \param[in] x The size_t to check.
- *
- * \return True if the given size_t is a power of two, false otherwise.
- */
 constexpr auto is_power_of_two(const size_t x) -> bool {
   return x != 0 && (x & (x - 1)) == 0;
 }
@@ -70,13 +58,6 @@ public:
         return *this;
     }
 
-    /**
-     * Allocate memory block of size count * sizeof(T) in the arena.
-     * @param count The number of elements to allocate (default: 1).
-     * @param alignment The alignment requirement of the type (default: alignof(T)).
-     * @return A pointer to the allocated memory or nullptr if the request exceeds the arena size.
-     * @remark The memory is cleared before returning.
-     */
     template<typename T>
     auto alloc(size_t count = 1, size_t alignment = alignof(T)) -> T* {
         size_t bytes = sizeof(T) * count;
@@ -92,16 +73,6 @@ public:
         return static_cast<T*>(p);
     }
 
-    /**
-     * Resize an allocation in the arena from Old to New.
-     * @param old_mem The existing allocation to resize (or nullptr to allocate a new block).
-     * @param old_count The number of elements in the existing allocation (default: 1).
-     * @param new_count The number of elements to allocate for the new block (default: 1).
-     * @param alignment The alignment requirement of the new block (default: alignof(New)).
-     * @return A pointer to the resized block or nullptr if the request exceeds the arena size.
-     * @remark The memory is cleared before returning. If the new size is smaller than the old size,
-     * the trailing bytes of the old block are left untouched.
-     */
     template<typename Old, typename New>
     auto resize(Old* old_mem, size_t old_count = 1, size_t new_count = 1, size_t alignment = alignof(New)) -> New* {
         size_t old_bytes = sizeof(Old) * old_count;
