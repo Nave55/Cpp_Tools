@@ -21,10 +21,6 @@ constexpr size_t GB =                MB * 1024ULL;
  * is a power of two, since it can be an important property for memory
  * allocation and other performance-critical code.
  *
- * This function is a no-op at runtime, and is entirely evaluated at compile
- * time. The function is also marked `constexpr`, meaning that the result can
- * be used in constant expressions.
- *
  * \param[in] x The size_t to check.
  *
  * \return True if the given size_t is a power of two, false otherwise.
@@ -42,28 +38,12 @@ private:
     size_t         m_curr_off  = 0;
 
 public:
-    /**
-     * Constructs an Arena object with a buffer of given size.
-     *
-     * The arena allocates a single block of memory of size buf_size
-     * which is used for all allocations. The memory is aligned to
-     * DEFAULT_ALIGNMENT bytes.
-     *
-     * @param buf_size The size of the allocation buffer (default: MB).
-     */
     Arena(size_t buf_size = MB)
     : m_buf_len(buf_size) {
         m_buf = static_cast<unsigned char*>(
             ::operator new[](m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT})
         );
     }
-
-    /**
-     * Destructs the Arena object, deallocating the buffer.
-     *
-     * The destructor releases the memory allocated for the buffer
-     * and outputs a message indicating that the Arena has been destroyed.
-     */
 
     ~Arena() {
         ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
@@ -152,13 +132,6 @@ public:
         return newp;
     }
 
-
-    /**
-     * Frees all allocations in the arena. This is more efficient than calling `free` on each
-     * allocation, as it doesn't check if the allocation is valid each time. However, it does
-     * not reset the arena's internal state, so you can't call `free_all` then continue
-     * allocating as if nothing had happened.
-     */
     auto free_all() noexcept -> void {
         m_prev_off = m_curr_off = 0;
     }
@@ -172,26 +145,12 @@ private:
     size_t m_prev_off, m_curr_off;
 
 public:
-/**
- * Constructs a TempArena that temporarily uses the given Arena for allocations.
- * The TempArena saves the current state of the Arena's offsets, allowing it to
- * reset them upon destruction to ensure temporary allocations do not persist.
- *
- * @param a Reference to the Arena object used for temporary allocations.
- */
-
     TempArena(Arena& a)
         : arena(a)
         , m_prev_off(a.m_prev_off)
         , m_curr_off(a.m_curr_off)
         {}
 
-    /**
-     * Destructor. Resets arena's internal state to its original state at the moment
-     * of TempArena construction. This ensures that any allocations made while the
-     * TempArena was alive are freed and do not persist after the TempArena is
-     * destroyed.
-     */
     ~TempArena() {
         arena.m_prev_off = m_prev_off;
         arena.m_curr_off = m_curr_off;
