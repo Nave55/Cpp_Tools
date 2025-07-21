@@ -130,3 +130,5 @@ public:
     TempArena(const TempArena&)            = delete;
     TempArena& operator=(const TempArena&) = delete;
 };
+
+extern Arena arena;
