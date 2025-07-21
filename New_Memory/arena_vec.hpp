@@ -67,6 +67,7 @@ public:
         return m_vec[i]; 
     }
     
+
     auto capacity() const noexcept -> size_t { return m_capacity; }
 
     auto size() const -> size_t { return m_len; }
@@ -145,7 +146,7 @@ public:
             return;
         }
 
-        // create variables for old and new alloc size
+        // create variables for old and new alloc bytes
         size_t old_alloc_size = m_capacity;
         size_t new_alloc_size = (m_capacity * 2);
 
@@ -184,7 +185,7 @@ public:
     auto shrink_to_fit() -> void {
         if (m_len > 0 && m_len < m_capacity) {
 
-            // create variables for old and new alloc size
+            // create variables for old and new alloc bytes
             size_t old_alloc_size = m_capacity;
             size_t new_alloc_size = (m_capacity * 2);
 
