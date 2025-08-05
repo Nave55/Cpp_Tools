@@ -148,7 +148,7 @@ public:
 
         // create variables for old and new alloc bytes
         size_t old_alloc_size = m_capacity;
-        size_t new_alloc_size = (m_capacity * 2);
+        size_t new_alloc_size = (new_size * 2);
 
         // resize allocation
         T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
@@ -170,7 +170,7 @@ public:
 
             // create variables for old and new alloc bytes
             size_t old_alloc_size = m_capacity;
-            size_t new_alloc_size = (m_capacity * 2);
+            size_t new_alloc_size = (new_size);
 
             // resize allocation
             T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
@@ -187,7 +187,7 @@ public:
 
             // create variables for old and new alloc bytes
             size_t old_alloc_size = m_capacity;
-            size_t new_alloc_size = (m_capacity * 2);
+            size_t new_alloc_size = m_len;
 
             // resize allocation
             T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
