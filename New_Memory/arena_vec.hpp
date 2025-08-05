@@ -130,6 +130,7 @@ public:
         return -1;
     }
 
+    // resizes length
     auto resize(size_t new_size) -> void {
         // check if new size is less than or equal to current size
         if (new_size <= m_len) {
@@ -185,12 +186,11 @@ public:
     auto shrink_to_fit() -> void {
         if (m_len > 0 && m_len < m_capacity) {
 
-            // create variables for old and new alloc bytes
+            // create variables for alloc sizes
             size_t old_alloc_size = m_capacity;
-            size_t new_alloc_size = m_len;
 
             // resize allocation
-            T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
+            T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, old_alloc_size);
             assert(new_m_vec && "Arena resize failed!");
 
             // Update the m_vector pointer and capacity
