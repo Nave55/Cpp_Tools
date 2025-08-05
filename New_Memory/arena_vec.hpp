@@ -56,14 +56,14 @@ public:
         }
 
     auto operator[](size_t i) -> T& {
-        // assert(i < m_len);
-        if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
+        assert(i < m_len);
+        // if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
         return m_vec[i]; 
     }
 
     auto operator[](size_t i) const -> const T& {
-        // assert(i < m_len);
-        if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
+        assert(i < m_len);
+        // if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
         return m_vec[i]; 
     }
     
