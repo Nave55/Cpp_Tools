@@ -56,14 +56,14 @@ public:
         }
 
     auto operator[](size_t i) -> T& {
-        assert(i < m_len);
-        // if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
+        // assert(i < m_len);
+        if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
         return m_vec[i]; 
     }
 
     auto operator[](size_t i) const -> const T& {
-        assert(i < m_len);
-        // if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
+        // assert(i < m_len);
+        if (i >= m_len) throw std::out_of_range{"m_vector::operator[]"}; 
         return m_vec[i]; 
     }
     
@@ -96,17 +96,29 @@ public:
         std::cout << "length: " << m_len << ", capacity: " << m_capacity << "\n";
     }
 
-    auto type() const -> void { std::cout << typeid(*m_vec).name(); }
+    auto type() const -> void { 
+        std::cout << typeid(*m_vec).name(); 
+    }
 
-    auto first() const -> T { return m_vec[0]; }
+    auto first() const -> T { 
+        return m_vec[0]; 
+    }
 
-    auto last() const -> T { return m_vec[m_len - 1]; }
+    auto last() const -> T { 
+        return m_vec[m_len - 1]; 
+    }
 
-    auto clear() -> void { for (size_t i = 0; i < m_len; i++) m_vec[i] = T(); }
+    auto clear() -> void { 
+        for (size_t i = 0; i < m_len; i++) m_vec[i] = T(); 
+    }
 
-    auto fill(T val) -> void { std::fill(m_vec, m_vec + m_len, val); }
+    auto fill(T val) -> void { 
+        std::fill(m_vec, m_vec + m_len, val); 
+    }
 
-    auto sort_vec() -> void { std::sort(begin(), end()); }
+    auto sort_vec() -> void { 
+        std::sort(begin(), end()); 
+    }
 
     auto linear_search(T x) const -> int {
         for (size_t i = 0; i < m_len; i++) {
