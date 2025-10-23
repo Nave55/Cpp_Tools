@@ -7,7 +7,7 @@ template <typename T>
 class Vec {
 private:
   Arena* m_arena;
-  T* m_vec{nullptr};
+  T*     m_vec{nullptr};
   size_t m_len{0};
   size_t m_capacity{0};
 
@@ -53,6 +53,29 @@ public:
         m_capacity{std::max(cap, lst.size())} {
     std::copy(lst.begin(), lst.end(), m_vec);
   }
+
+  ~Vec() {}
+
+  Vec(const Vec &vec) 
+    : m_arena{vec.m_arena},
+      m_vec{m_arena->alloc<T>(vec.m_capacity)},
+      m_len{vec.m_len},
+      m_capacity{vec.m_capacity} {
+        std::copy(vec.m_vec, vec.m_vec + vec.m_len, m_vec);
+  }
+
+  Vec(Vec &&vec) 
+    : m_arena{vec.m_arena},
+      m_vec{std::move(vec.m_vec)},
+      m_len{vec.m_len},
+      m_capacity{vec.m_capacity} {
+        vec.m_vec = nullptr;
+        vec.m_len = 0;
+        vec.m_capacity = 0;
+      }
+
+  Vec& operator=(const Vec&) = delete;
+  Vec& operator=(Vec&&) = delete;
 
   auto operator[](size_t i) -> T& {
     // assert(i < m_len);
@@ -143,7 +166,7 @@ public:
 
   auto binary_search(T x) const -> int {
     int high = m_len - 1;
-    int low = 0;
+    int low  = 0;
 
     while (low <= high) {
       int mid = low + ((high - low) / 2);
@@ -173,15 +196,15 @@ public:
     }
 
     size_t new_alloc_size = std::max(new_size, m_capacity + m_capacity / 2);
-    T* new_m_vec = m_arena->resize<T, T>(m_vec, m_capacity, new_alloc_size);
+    T*     new_m_vec = m_arena->resize<T, T>(m_vec, m_capacity, new_alloc_size);
     assert(new_m_vec && "Arena resize failed!");
 
     for (size_t i = m_len; i < new_size; ++i) {
       new_m_vec[i] = T();
     }
 
-    m_vec = new_m_vec;
-    m_len = new_size;
+    m_vec      = new_m_vec;
+    m_len      = new_size;
     m_capacity = new_alloc_size;
   }
 
@@ -194,11 +217,11 @@ public:
 
       // resize allocation
       T* new_m_vec =
-          (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
+          (T*)m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
       assert(new_m_vec && "Arena resize failed!");
 
       // Update the m_vector pointer and capacity
-      m_vec = new_m_vec;
+      m_vec      = new_m_vec;
       m_capacity = new_alloc_size;
     }
   }
@@ -206,11 +229,11 @@ public:
   auto shrink_to_fit() -> void {
     if (m_len > 0 && m_len < m_capacity) {
       // resize allocation
-      T* new_m_vec = (T*) m_arena->resize<T, T>(m_vec, m_capacity, m_len);
+      T* new_m_vec = (T*)m_arena->resize<T, T>(m_vec, m_capacity, m_len);
       assert(new_m_vec && "Arena resize failed!");
 
       // Update the m_vector pointer and capacity
-      m_vec = new_m_vec;
+      m_vec      = new_m_vec;
       m_capacity = m_len;
     }
   }
@@ -231,11 +254,11 @@ public:
 
       // resize allocation
       T* new_m_vec =
-          (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
+          (T*)m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
       assert(new_m_vec && "Arena resize failed!");
 
       // Update the m_vector pointer and capacity
-      m_vec = new_m_vec;
+      m_vec      = new_m_vec;
       m_capacity = new_alloc_size;
     }
 
@@ -261,11 +284,11 @@ public:
 
       // resize allocation
       T* new_m_vec =
-          (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
+          (T*)m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
       assert(new_m_vec && "Arena resize failed!");
 
       // Update the vector pointer and capacity
-      m_vec = new_m_vec;
+      m_vec      = new_m_vec;
       m_capacity = new_alloc_size;
     }
 
@@ -285,11 +308,11 @@ public:
 
       // resize allocation
       T* new_m_vec =
-          (T*) m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
+          (T*)m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
       assert(new_m_vec && "Arena resize failed!");
 
       // Update the m_vector pointer and capacity
-      m_vec = new_m_vec;
+      m_vec      = new_m_vec;
       m_capacity = new_alloc_size;
     }
 
