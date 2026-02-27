@@ -10,19 +10,22 @@ public:
   UniqPtr()
       : ptr(nullptr) {}
 
-  UniqPtr(T* raw)
+  explicit UniqPtr(T* raw)
       : ptr{raw} {}
+
+  explicit UniqPtr(T val)
+      : ptr(new T(val)) {}
 
   UniqPtr(const UniqPtr&) = delete;
 
   UniqPtr& operator=(const UniqPtr&) = delete;
 
-  UniqPtr(UniqPtr&& other)
+  UniqPtr(UniqPtr&& other) noexcept
       : ptr(other.ptr) {
     other.ptr = nullptr;
   }
 
-  UniqPtr& operator=(UniqPtr&& other) {
+  UniqPtr& operator=(UniqPtr&& other) noexcept {
     if (this != &other) {
       delete ptr;
       ptr = other.ptr;
@@ -60,13 +63,20 @@ public:
         new ControlBlock{1, 1, [](void* p) { delete static_cast<T*>(p); }, raw};
   }
 
-  SharedPtr(const SharedPtr& other)
+  template <typename... Args>
+  explicit SharedPtr(Args&&... args)
+      : ptr(new T(std::forward<Args>(args)...)) {
+    cb =
+        new ControlBlock{1, 1, [](void* p) { delete static_cast<T*>(p); }, ptr};
+  }
+
+  SharedPtr(const SharedPtr& other) noexcept
       : ptr(other.ptr),
         cb(other.cb) {
     cb->strong.fetch_add(1);
   }
 
-  SharedPtr& operator=(const SharedPtr& other) {
+  SharedPtr& operator=(const SharedPtr& other) noexcept {
     if (this != &other) {
       m_release();
       ptr = other.ptr;
@@ -107,7 +117,9 @@ private:
 
       if (cb->weak.fetch_sub(1) == 1) {
         delete cb;
+#ifdef DEBUG
         std::cout << "Shared Ptr Released\n";
+#endif
       }
     }
   }
@@ -122,12 +134,12 @@ public:
   WeakPtr()
       : cb(nullptr) {}
 
-  WeakPtr(const SharedPtr<T>& sp)
+  explicit WeakPtr(const SharedPtr<T>& sp)
       : cb(sp.cb) {
     if (cb) cb->weak.fetch_add(1);
   }
 
-  WeakPtr(const WeakPtr& other)
+  explicit WeakPtr(const WeakPtr& other)
       : cb(other.cb) {
     if (cb) cb->weak.fetch_add(1);
   }
@@ -158,4 +170,3 @@ public:
     return sp;
   }
 };
-
