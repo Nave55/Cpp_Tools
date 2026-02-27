@@ -300,82 +300,51 @@ public:
     ++m_len;
   }
 
-  auto insert(T val, size_t ind) -> void {
-    if (m_capacity == 0) return;
-    if (m_capacity == m_len) {
-      // create variables for old and new alloc bytes
-      size_t old_alloc_size = m_capacity;
-      size_t new_alloc_size = (m_capacity * 2);
+  void insert(const T& val, size_t ind) {
+    if (ind > m_len) ind = m_len;
 
-      // resize allocation
-      T* new_m_vec =
-          (T*)m_arena->resize<T, T>(m_vec, old_alloc_size, new_alloc_size);
-      assert(new_m_vec && "Arena resize failed!");
-
-      // Update the m_vector pointer and capacity
-      m_vec      = new_m_vec;
-      m_capacity = new_alloc_size;
+    if (m_len == m_capacity) {
+        size_t old_cap = m_capacity;
+        size_t new_cap = old_cap * 2;
+        T* new_vec = m_arena->resize<T,T>(m_vec, old_cap, new_cap);
+        assert(new_vec);
+        m_vec = new_vec;
+        m_capacity = new_cap;
     }
 
-    // Shift elements to the right to make room for the new element
-    for (int i = m_len; i > -1; --i) {
-      if (static_cast<size_t>(i) > ind)
-        std::swap(m_vec[i], m_vec[i - 1]);
-      else if (static_cast<size_t>(i) == ind)
-        m_vec[i] = val;
-    }
+    // shift right
+    for (size_t i = m_len; i > ind; --i)
+        m_vec[i] = m_vec[i - 1];
 
+    m_vec[ind] = val;
     ++m_len;
   }
 
   auto pop() -> void {
     assert(m_len > 0);
-
-    // set the last element to 0
-    m_vec[m_len - 1] = T();
-
-    // decrement the length
     --m_len;
   }
 
   auto pop_back() -> T {
     assert(m_len > 0);
-
-    // Get the last element
     T val = m_vec[m_len - 1];
-
-    // set the last element to 0
-    m_vec[m_len - 1] = T();
-
-    // decrement the length
     --m_len;
-
     return val;
   }
 
-  auto ordered_remove(size_t ind) -> void {
-    if (ind >= m_len || m_len == 0) return;
+  void ordered_remove(size_t ind) {
+    if (ind >= m_len) return;
 
-    if (m_len == 1)
-      pop_back();
-    else {
-      // shift elements to the left
-      for (size_t i = ind; i < m_len - 1; ++i)
-        std::swap(m_vec[i], m_vec[i + 1]);
-    }
+    for (size_t i = ind; i + 1 < m_len; ++i)
+        m_vec[i] = m_vec[i + 1];
 
-    // decrement the length
     --m_len;
   }
 
-  auto unordered_remove(size_t ind) -> void {
-    if (ind >= m_len || m_len == 0) return;
+  void unordered_remove(size_t ind) {
+    if (ind >= m_len) return;
 
-    if (m_len == 1)
-      pop();
-    else {
-      // swap the element to be removed with the last element and pop_back
-      m_vec[ind] = pop_back();
-    }
+    m_vec[ind] = m_vec[m_len - 1];
+    --m_len;
   }
 };
