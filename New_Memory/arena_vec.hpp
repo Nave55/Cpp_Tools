@@ -142,6 +142,7 @@ public:
 
   auto clear() -> void {
     for (size_t i = 0; i < m_len; i++) m_vec[i] = T();
+    m_len = 0;
   }
 
   auto fill(T val) -> void {
@@ -212,7 +213,7 @@ public:
     if (new_size > m_capacity) {
       // create variables for old and new alloc bytes
       size_t old_alloc_size = m_capacity;
-      size_t new_alloc_size = std::max(m_capacity + 20, new_size);
+      size_t new_alloc_size = std::max(m_capacity, new_size);
       // size_t new_alloc_size = (new_size);
 
       // resize allocation
@@ -250,7 +251,7 @@ public:
     if (m_capacity == m_len) {
       // create variables for old and new alloc bytes
       size_t old_alloc_size = m_capacity;
-      size_t new_alloc_size = (m_capacity + 20);
+      size_t new_alloc_size = (m_capacity * 2);
 
       // resize allocation
       T* new_m_vec =
@@ -280,7 +281,7 @@ public:
     if (m_capacity == m_len) {
       // create variables for old and new alloc bytes
       size_t old_alloc_size = m_capacity;
-      size_t new_alloc_size = (m_capacity + 20);
+      size_t new_alloc_size = (m_capacity * 2);
 
       // resize allocation
       T* new_m_vec =
@@ -304,7 +305,7 @@ public:
     if (m_capacity == m_len) {
       // create variables for old and new alloc bytes
       size_t old_alloc_size = m_capacity;
-      size_t new_alloc_size = (m_capacity + 20);
+      size_t new_alloc_size = (m_capacity * 2);
 
       // resize allocation
       T* new_m_vec =
