@@ -114,9 +114,11 @@ private:
 };
 
 template <typename T>
-struct WeakPtr {
+class WeakPtr {
+public:
   ControlBlock* cb;
 
+public:
   WeakPtr()
       : cb(nullptr) {}
 
@@ -156,3 +158,4 @@ struct WeakPtr {
     return sp;
   }
 };
+
