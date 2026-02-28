@@ -170,3 +170,92 @@ public:
     return sp;
   }
 };
+
+class RefCounted {
+private:
+  std::atomic<int> m_refcount;
+
+public:
+  void add_ref() noexcept {
+    m_refcount.fetch_add(1, std::memory_order_relaxed);
+  }
+
+  void release_ref() noexcept {
+    if (m_refcount.fetch_sub(1, std::memory_order_acq_rel) == 1) {
+      delete this;
+    }
+  }
+
+protected:
+  RefCounted() noexcept
+      : m_refcount(0) {}
+  virtual ~RefCounted() = default;
+};
+
+template <typename T>
+class IntrusivePtr {
+private:
+  T* m_ptr;
+
+public:
+  IntrusivePtr() noexcept
+      : m_ptr(nullptr) {}
+
+  explicit IntrusivePtr(T* p, bool add_ref = true)
+      : m_ptr(p) {
+    if (m_ptr && add_ref) {
+      m_ptr->add_ref();
+    }
+  }
+
+  IntrusivePtr(const IntrusivePtr& other) noexcept
+      : m_ptr(other.m_ptr) {
+    if (m_ptr) m_ptr->add_ref();
+  }
+
+  IntrusivePtr(IntrusivePtr&& other) noexcept
+      : m_ptr(other.m_ptr) {
+    other.m_ptr = nullptr;
+  }
+
+  ~IntrusivePtr() {
+    if (m_ptr) {
+      m_ptr->release_ref();
+#ifdef DEBUG
+      std::cout << "Intrusive Ptr Released\n";
+#endif
+    }
+  }
+
+  IntrusivePtr& operator=(const IntrusivePtr& other) noexcept {
+    if (this != &other) {
+      if (other.m_ptr) other.m_ptr->add_ref();
+      if (m_ptr) m_ptr->release_ref();
+      m_ptr = other.m_ptr;
+    }
+    return *this;
+  }
+
+  IntrusivePtr& operator=(IntrusivePtr&& other) noexcept {
+    if (this != &other) {
+      if (m_ptr) m_ptr->release_ref();
+      m_ptr = other.m_ptr;
+      other.m_ptr = nullptr;
+    }
+    return *this;
+  }
+
+  T* get() const noexcept {
+    return m_ptr;
+  }
+  T& operator*() const noexcept {
+    return *m_ptr;
+  }
+  T* operator->() const noexcept {
+    return m_ptr;
+  }
+  explicit operator bool() const noexcept {
+    return m_ptr != nullptr;
+  }
+};
+
