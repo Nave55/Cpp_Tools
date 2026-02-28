@@ -37,7 +37,7 @@ public:
   ~UniquePtr() {
     delete (ptr);
 #ifdef DEBUG
-    std::cout << "Uniq Ptr Released\n";
+    std::cout << "Unique Ptr Released\n";
 #endif
   }
 };
@@ -50,59 +50,66 @@ struct ControlBlock {
 };
 
 template <typename T>
+class WeakPtr;
+
+template <typename T>
 class SharedPtr {
+  friend class WeakPtr<T>;
+
 public:
   T* ptr;
-  ControlBlock* cb;
+
+private:
+  ControlBlock* m_cb;
 
 public:
   SharedPtr()
       : ptr(nullptr),
-        cb(nullptr) {}
+        m_cb(nullptr) {}
 
   explicit SharedPtr(T* raw)
       : ptr(raw) {
-    cb =
+    m_cb =
         new ControlBlock{1, 1, [](void* p) { delete static_cast<T*>(p); }, raw};
   }
 
   template <typename... Args>
   explicit SharedPtr(Args&&... args)
       : ptr(new T(std::forward<Args>(args)...)) {
-    cb =
+    m_cb =
         new ControlBlock{1, 1, [](void* p) { delete static_cast<T*>(p); }, ptr};
   }
 
   SharedPtr(const SharedPtr& other) noexcept
       : ptr(other.ptr),
-        cb(other.cb) {
-    cb->strong.fetch_add(1);
+        m_cb(other.m_cb) {
+    m_cb->strong.fetch_add(1);
   }
 
   SharedPtr& operator=(const SharedPtr& other) noexcept {
     if (this != &other) {
       m_release();
       ptr = other.ptr;
-      cb = other.cb;
-      cb->strong.fetch_add(1);
+      m_cb = other.m_cb;
+      m_cb->strong.fetch_add(1);
     }
     return *this;
   }
 
   SharedPtr(SharedPtr&& other) noexcept
       : ptr(other.ptr),
-        cb(other.cb) {
+        m_cb(other.m_cb) {
     other.ptr = nullptr;
-    other.cb = nullptr;
+    other.m_cb = nullptr;
   }
 
   SharedPtr& operator=(SharedPtr&& other) noexcept {
     if (this != &other) {
       m_release();
       ptr = other.ptr;
-      cb = other.cb;
+      m_cb = other.m_cb;
       other.ptr = nullptr;
-      other.cb = nullptr;
+      other.m_cb = nullptr;
     }
     return *this;
   }
@@ -111,15 +118,23 @@ public:
     m_release();
   }
 
+  uint32_t getWeakCount() {
+    return m_cb->weak;
+  }
+
+  uint32_t getStrongCount() {
+    return m_cb->strong;
+  }
+
 private:
   void m_release() {
-    if (!cb) return;
+    if (!m_cb) return;
 
-    if (cb->strong.fetch_sub(1) == 1) {
-      cb->deleter(cb->object);
+    if (m_cb->strong.fetch_sub(1) == 1) {
+      m_cb->deleter(m_cb->object);
 
-      if (cb->weak.fetch_sub(1) == 1) {
-        delete cb;
+      if (m_cb->weak.fetch_sub(1) == 1) {
+        delete m_cb;
 #ifdef DEBUG
         std::cout << "Shared Ptr Released\n";
 #endif
@@ -130,53 +145,67 @@ private:
 
 template <typename T>
 class WeakPtr {
-public:
-  ControlBlock* cb;
+private:
+  ControlBlock* m_cb;
 
 public:
   WeakPtr()
-      : cb(nullptr) {}
+      : m_cb(nullptr) {}
 
   explicit WeakPtr(const SharedPtr<T>& sp)
-      : cb(sp.cb) {
-    if (cb) cb->weak.fetch_add(1);
+      : m_cb(sp.m_cb) {
+    if (m_cb) m_cb->weak.fetch_add(1);
   }
 
   explicit WeakPtr(const WeakPtr& other)
-      : cb(other.cb) {
-    if (cb) cb->weak.fetch_add(1);
+      : m_cb(other.m_cb) {
+    if (m_cb) m_cb->weak.fetch_add(1);
   }
 
   ~WeakPtr() {
-    if (cb && cb->weak.fetch_sub(1) == 1) {
-      delete cb;  // only if strong == 0 too
+    if (m_cb && m_cb->weak.fetch_sub(1) == 1) {
+      if (m_cb->strong.load() == 0) {
+        delete m_cb;
+      }
     }
   }
 
   SharedPtr<T> lock() const {
-    if (!cb) return SharedPtr<T>();
+    if (!m_cb) return SharedPtr<T>();
 
-    long count = cb->strong.load();
+    long count = m_cb->strong.load();
     if (count == 0) return SharedPtr<T>();  // object is gone
 
     // try to increment strong
-    if (cb->strong.fetch_add(1) == 0) {
+    if (m_cb->strong.fetch_add(1) == 0) {
       // object died between load() and fetch_add()
-      cb->strong.fetch_sub(1);
+      m_cb->strong.fetch_sub(1);
       return SharedPtr<T>();
     }
 
     // success: create a SharedPtr that shares ownership
     SharedPtr<T> sp;
-    sp.cb = cb;
-    sp.ptr = static_cast<T*>(cb->object);
+    sp.m_cb = m_cb;
+    sp.ptr = static_cast<T*>(m_cb->object);
     return sp;
+  }
+
+  bool expired() const {
+    return !m_cb || m_cb->strong.load() == 0;
+  }
+
+  uint32_t getWeakCount() {
+    return m_cb->weak;
+  }
+
+  uint32_t getStrongCount() {
+    return m_cb->strong;
   }
 };
 
 class RefCounted {
 private:
-  std::atomic<int> m_refcount;
+  std::atomic<uint32_t> m_refcount;
 
 public:
   void add_ref() noexcept {
@@ -251,12 +280,15 @@ public:
   T* get() const noexcept {
     return m_ptr;
   }
+
   T& operator*() const noexcept {
     return *m_ptr;
   }
+
   T* operator->() const noexcept {
     return m_ptr;
   }
+
   explicit operator bool() const noexcept {
     return m_ptr != nullptr;
   }
