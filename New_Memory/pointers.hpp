@@ -2,30 +2,30 @@
 #include <iostream>
 
 template <typename T>
-class UniqPtr {
+class UniquePtr {
 public:
   T* ptr;
 
 public:
-  UniqPtr()
+  UniquePtr()
       : ptr(nullptr) {}
 
-  explicit UniqPtr(T* raw)
+  explicit UniquePtr(T* raw)
       : ptr{raw} {}
 
-  explicit UniqPtr(T val)
+  explicit UniquePtr(T val)
       : ptr(new T(val)) {}
 
-  UniqPtr(const UniqPtr&) = delete;
+  UniquePtr(const UniquePtr&) = delete;
 
-  UniqPtr& operator=(const UniqPtr&) = delete;
+  UniquePtr& operator=(const UniquePtr&) = delete;
 
-  UniqPtr(UniqPtr&& other) noexcept
+  UniquePtr(UniquePtr&& other) noexcept
       : ptr(other.ptr) {
     other.ptr = nullptr;
   }
 
-  UniqPtr& operator=(UniqPtr&& other) noexcept {
+  UniquePtr& operator=(UniquePtr&& other) noexcept {
     if (this != &other) {
       delete ptr;
       ptr = other.ptr;
@@ -34,8 +34,11 @@ public:
     return *this;
   }
 
-  ~UniqPtr() {
+  ~UniquePtr() {
     delete (ptr);
+#ifdef DEBUG
+    std::cout << "Uniq Ptr Released\n";
+#endif
   }
 };
 
@@ -258,4 +261,3 @@ public:
     return m_ptr != nullptr;
   }
 };
-
