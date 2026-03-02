@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include <atomic>
 
 template <typename T>
 class UniquePtr {
