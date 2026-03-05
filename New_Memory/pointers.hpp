@@ -1,6 +1,6 @@
+#include <atomic>
 #include <cstdint>
 #include <iostream>
-#include <atomic>
 
 template <typename T>
 class UniquePtr {
@@ -40,6 +40,14 @@ public:
 #ifdef DEBUG
     std::cout << "Unique Ptr Released\n";
 #endif
+  }
+
+  T& operator*() const noexcept {
+    return *ptr;
+  }
+
+  T* operator->() const noexcept {
+    return ptr;
   }
 };
 
@@ -125,6 +133,14 @@ public:
 
   uint32_t getStrongCount() {
     return m_cb->strong;
+  }
+
+  T& operator*() const noexcept {
+    return *ptr;
+  }
+
+  T* operator->() const noexcept {
+    return ptr;
   }
 
 private:
