@@ -1,8 +1,33 @@
 #pragma once
 
-#include <cstring>
+#include <algorithm>
 #include <initializer_list>
+#include <stdexcept>
 #include "allocators.hpp"
+
+template <typename T>
+void print_value(const T& v);
+
+inline void print_value(int v) {
+  printf("%d", v);
+}
+inline void print_value(size_t v) {
+  printf("%zu", v);
+}
+inline void print_value(float v) {
+  printf("%f", v);
+}
+inline void print_value(double v) {
+  printf("%f", v);
+}
+inline void print_value(const char* s) {
+  printf("%s", s);
+}
+inline void print_value(char c) {
+  printf("%c", c);
+}
+
+enum class Order { Asc, Desc };
 
 template <typename T>
 class Vec {
@@ -114,29 +139,38 @@ public:
 
   const char* type() const noexcept {
     return typeid(T).name();
-    // return typeid(*m_vec).name();
   }
 
   void print() const noexcept {
     if (m_len == 0) {
-      std::cout << "[]\n";
+      std::printf("[]\n");
       return;
     }
     for (size_t i = 0; i < m_len; i++) {
-      if (i == 0)
-        std::cout << "[" << m_vec[i];
-      else if (i < m_len - 1)
-        std::cout << ", " << m_vec[i];
-      else
-        std::cout << ", " << m_vec[i] << "]\n";
+      if (i == 0) {
+        std::printf("[");
+        print_value(m_vec[i]);
+      } else if (i < m_len - 1) {
+        std::printf(", ");
+        print_value(m_vec[i]);
+      } else {
+        std::printf(", ");
+        print_value(m_vec[i]);
+        std::printf("]\n");
+      }
 
-      if (m_len == 1) std::cout << "]\n";
+      if (m_len == 1) std::printf("]\n");
     }
   }
 
   void printInfo() const noexcept {
-    std::cout << "length: " << m_len << ", capacity: " << m_capacity
-              << ", type: " << type() << "\n";
+    std::printf("length: ");
+    print_value(m_len);
+    std::printf(", capacity: ");
+    print_value(m_capacity);
+    std::printf(", type: ");
+    print_value(type());
+    std::printf("\n");
   }
 
   T first() const noexcept {
@@ -152,19 +186,19 @@ public:
     m_len = 0;
   }
 
-  void fill(T val) noexcept {
-    std::fill(m_vec, m_vec + m_len, val);
+  void fill(const T& val) noexcept {
+    std::fill(begin(), end(), val);
   }
 
   void sort() noexcept {
     std::sort(begin(), end());
   }
 
-  void sort_descending() noexcept {
+  void sortDescending() noexcept {
     std::sort(begin(), end(), [](const T& a, const T& b) { return a > b; });
   }
 
-  int linear_search(T x) const {
+  int linearSearch(T x) const noexcept {
     for (size_t i = 0; i < m_len; i++) {
       if (m_vec[i] == x) return i;
     }
@@ -172,7 +206,7 @@ public:
     return -1;
   }
 
-  int binary_search(T x) const noexcept {
+  int binarySearch(T x) const noexcept {
     int high = m_len - 1;
     int low = 0;
 
@@ -228,7 +262,7 @@ public:
     }
   }
 
-  void shrink_to_fit() noexcept {
+  void shrinkToFit() noexcept {
     if (m_len > 0 && m_len < m_capacity) {
       T* new_vec = static_cast<T*>(m_alloc->resize(
           m_vec, m_capacity * sizeof(T), m_len * sizeof(T), alignof(T)));
@@ -240,13 +274,8 @@ public:
   }
 
   template <typename S>
-  void push_back(S val) noexcept {
-    if constexpr (!std::is_same_v<S, T>) {
-      std::cout << "push_back failed: Type mismatch. Expected "
-                << typeid(T).name() << ", got " << typeid(val).name() << "\n";
-      return;
-    }
-
+    requires std::is_same_v<S, T>
+  void pushBack(S val) noexcept {
     if (m_len == m_capacity) {
       size_t old_cap = m_capacity;
       size_t new_cap = old_cap * 2;
@@ -263,7 +292,9 @@ public:
   }
 
   template <typename... Args>
-  void emplace_back(Args&&... args) noexcept {
+    requires(sizeof...(Args) == 1 &&
+             std::is_same_v<T, std::remove_cvref_t<Args>...>)
+  void emplaceBack(Args&&... args) noexcept {
     if (m_len == m_capacity) {
       size_t old_cap = m_capacity;
       size_t new_cap = old_cap * 2;
@@ -280,7 +311,9 @@ public:
     ++m_len;
   }
 
-  void insert(const T& val, size_t ind) noexcept {
+  template <typename S>
+    requires std::is_same_v<std::remove_cvref_t<S>, T>
+  void insert(S&& val, size_t ind) noexcept {
     if (ind > m_len) ind = m_len;
 
     if (m_len == m_capacity) {
@@ -289,7 +322,7 @@ public:
 
       T* new_vec = static_cast<T*>(m_alloc->resize(
           m_vec, old_cap * sizeof(T), new_cap * sizeof(T), alignof(T)));
-      assert(new_vec);
+      assert(new_vec && "Allocator resize failed!");
 
       m_vec = new_vec;
       m_capacity = new_cap;
@@ -297,7 +330,7 @@ public:
 
     for (size_t i = m_len; i > ind; --i) m_vec[i] = m_vec[i - 1];
 
-    m_vec[ind] = val;
+    m_vec[ind] = std::forward<S>(val);
     ++m_len;
   }
 
@@ -306,14 +339,14 @@ public:
     --m_len;
   }
 
-  T pop_back() noexcept {
+  T popBack() noexcept {
     assert(m_len > 0);
     T val = m_vec[m_len - 1];
     --m_len;
     return val;
   }
 
-  void ordered_remove(size_t ind) noexcept {
+  void orderedRemove(size_t ind) noexcept {
     if (ind >= m_len) return;
 
     for (size_t i = ind; i + 1 < m_len; ++i) m_vec[i] = m_vec[i + 1];
@@ -321,7 +354,7 @@ public:
     --m_len;
   }
 
-  void unordered_remove(size_t ind) noexcept {
+  void unorderedRemove(size_t ind) noexcept {
     if (ind >= m_len) return;
 
     m_vec[ind] = m_vec[m_len - 1];
