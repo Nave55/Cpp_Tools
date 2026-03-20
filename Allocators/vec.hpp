@@ -7,19 +7,19 @@
 template <typename T>
 class Vec {
 private:
-  IAllocator* m_alloc;
+  MemAllocator* m_alloc;
   T* m_vec{nullptr};
   size_t m_len = 0;
   size_t m_capacity = 0;
 
 public:
-  explicit Vec(IAllocator& alloc)
+  explicit Vec(MemAllocator& alloc)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * 10, alignof(T)))},
         m_len{0},
         m_capacity{10} {}
 
-  explicit Vec(IAllocator& alloc, size_t sz)
+  explicit Vec(MemAllocator& alloc, size_t sz)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
@@ -27,7 +27,7 @@ public:
     memset(m_vec, T(), sz);
   }
 
-  explicit Vec(IAllocator& alloc, size_t sz, size_t cap)
+  explicit Vec(MemAllocator& alloc, size_t sz, size_t cap)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
@@ -35,7 +35,7 @@ public:
     memset(m_vec, T(), sz);
   }
 
-  explicit Vec(IAllocator& alloc, std::initializer_list<T> lst)
+  explicit Vec(MemAllocator& alloc, std::initializer_list<T> lst)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))},
@@ -44,7 +44,7 @@ public:
     std::copy(lst.begin(), lst.end(), m_vec);
   }
 
-  explicit Vec(IAllocator& alloc, std::initializer_list<T> lst, size_t cap)
+  explicit Vec(MemAllocator& alloc, std::initializer_list<T> lst, size_t cap)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(
             sizeof(T) * std::max(cap, lst.size()), alignof(T)))},
