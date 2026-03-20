@@ -49,7 +49,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
-    memset(m_vec, T(), sz);
+          for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
   }
 
   explicit Vec(MemAllocator& alloc, size_t sz, size_t cap)
@@ -57,7 +57,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
         m_capacity{cap} {
-    memset(m_vec, T(), sz);
+    for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
   }
 
   explicit Vec(MemAllocator& alloc, std::initializer_list<T> lst)
