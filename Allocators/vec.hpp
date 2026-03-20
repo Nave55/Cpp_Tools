@@ -13,30 +13,30 @@ private:
   size_t m_capacity = 0;
 
 public:
-  explicit Vec(Arena& arena)
-      : m_alloc{&arena},
+  explicit Vec(IAllocator& alloc)
+      : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * 10, alignof(T)))},
         m_len{0},
         m_capacity{10} {}
 
-  explicit Vec(Arena& arena, size_t sz)
-      : m_alloc{&arena},
+  explicit Vec(IAllocator& alloc, size_t sz)
+      : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
     memset(m_vec, T(), sz);
   }
 
-  explicit Vec(Arena& arena, size_t sz, size_t cap)
-      : m_alloc{&arena},
+  explicit Vec(IAllocator& alloc, size_t sz, size_t cap)
+      : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
         m_capacity{cap} {
     memset(m_vec, T(), sz);
   }
 
-  explicit Vec(Arena& arena, std::initializer_list<T> lst)
-      : m_alloc{&arena},
+  explicit Vec(IAllocator& alloc, std::initializer_list<T> lst)
+      : m_alloc{&alloc},
         m_vec{static_cast<T*>(
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))},
         m_len{lst.size()},
@@ -44,8 +44,8 @@ public:
     std::copy(lst.begin(), lst.end(), m_vec);
   }
 
-  explicit Vec(Arena& arena, std::initializer_list<T> lst, size_t cap)
-      : m_alloc{&arena},
+  explicit Vec(IAllocator& alloc, std::initializer_list<T> lst, size_t cap)
+      : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(
             sizeof(T) * std::max(cap, lst.size()), alignof(T)))},
         m_len{lst.size()},
