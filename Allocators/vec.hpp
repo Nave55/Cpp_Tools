@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstring>
 #include <initializer_list>
 #include "allocators.hpp"
 
@@ -23,7 +24,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
-    for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
+    memset(m_vec, T(), sz);
   }
 
   explicit Vec(Arena& arena, size_t sz, size_t cap)
@@ -31,7 +32,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
         m_capacity{cap} {
-    for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
+    memset(m_vec, T(), sz);
   }
 
   explicit Vec(Arena& arena, std::initializer_list<T> lst)
