@@ -1,6 +1,5 @@
 #include <atomic>
-#include <cstdint>
-#include <iostream>
+#include <cstdio>
 
 template <typename T>
 class UniquePtr {
@@ -38,7 +37,7 @@ public:
   ~UniquePtr() {
     delete (ptr);
 #ifdef DEBUG
-    std::cout << "Unique Ptr Released\n";
+    std::printf("Unique Ptr Released\n");
 #endif
   }
 
@@ -153,7 +152,7 @@ private:
       if (m_cb->weak.fetch_sub(1) == 1) {
         delete m_cb;
 #ifdef DEBUG
-        std::cout << "Shared Ptr Released\n";
+        std::printf("Shared Ptr Released\n");
 #endif
       }
     }
@@ -271,7 +270,7 @@ public:
     if (m_ptr) {
       m_ptr->release_ref();
 #ifdef DEBUG
-      std::cout << "Intrusive Ptr Released\n";
+      std::printf("Intrusive Ptr Released\n");
 #endif
     }
   }
