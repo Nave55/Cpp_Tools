@@ -8,9 +8,9 @@
 #include <memory>  // for std::align
 #include <new>     // for operator new/delete
 
-class IAllocator {
+class MemAllocator {
 public:
-  virtual ~IAllocator() = default;
+  virtual ~MemAllocator() = default;
 
   virtual void* allocate(size_t bytes, size_t alignment) = 0;
 
@@ -29,7 +29,7 @@ consteval auto is_power_of_two(const size_t x) -> bool {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
-class Arena : public IAllocator {
+class Arena : public MemAllocator {
 private:
   friend class TempArena;
 
@@ -163,6 +163,9 @@ public:
   ~TempArena() {
     arena.m_prev_off = m_prev_off;
     arena.m_curr_off = m_curr_off;
+#if DEBUG
+    std::cout << "Temp Arena Destroyed\n";
+#endif
   }
 
   TempArena(const TempArena&) = delete;
