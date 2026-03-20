@@ -5,6 +5,15 @@
 #include <memory>
 #include <new>
 
+constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
+constexpr size_t KB = 1024ULL;
+constexpr size_t MB = KB * 1024ULL;
+constexpr size_t GB = MB * 1024ULL;
+
+consteval auto is_power_of_two(const size_t x) -> bool {
+  return x != 0 && (x & (x - 1)) == 0;
+}
+
 class MemAllocator {
 public:
   virtual ~MemAllocator() = default;
@@ -16,15 +25,6 @@ public:
 
   virtual void free_all() = 0;
 };
-
-constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
-constexpr size_t KB = 1024ULL;
-constexpr size_t MB = KB * 1024ULL;
-constexpr size_t GB = MB * 1024ULL;
-
-consteval auto is_power_of_two(const size_t x) -> bool {
-  return x != 0 && (x & (x - 1)) == 0;
-}
 
 class Arena : public MemAllocator {
 private:
@@ -142,10 +142,7 @@ public:
   }
 };
 
-// ------------------------------------------------------------
 // TempArena (checkpoint / rollback)
-// ------------------------------------------------------------
-
 class TempArena {
 private:
   Arena& arena;
