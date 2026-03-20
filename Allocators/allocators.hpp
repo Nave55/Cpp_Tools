@@ -1,12 +1,9 @@
 #pragma once
 
-#include <algorithm>  // for std::min
 #include <cassert>
-#include <cstddef>
-#include <cstring>
-#include <iostream>
-#include <memory>  // for std::align
-#include <new>     // for operator new/delete
+#include <cstdio>
+#include <memory>
+#include <new>
 
 class MemAllocator {
 public:
@@ -48,7 +45,7 @@ public:
   ~Arena() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-    std::cout << "Arena destroyed\n";
+    std::printf("Arena destroyed\n");
 #endif
   }
 
@@ -139,9 +136,9 @@ public:
   }
 
   void info() {
-    std::cout << "Current Offset: " << m_curr_off << "\n";
-    std::cout << "Previous Offset: " << m_prev_off << "\n";
-    std::cout << "Size of Arena: " << m_buf_len << "\n";
+    std::printf("Current Offset: %zu\n", m_curr_off);
+    std::printf("Previous Offset: %zu\n", m_prev_off);
+    std::printf("Size of Arena: %zu\n", m_buf_len);
   }
 };
 
@@ -164,7 +161,7 @@ public:
     arena.m_prev_off = m_prev_off;
     arena.m_curr_off = m_curr_off;
 #if DEBUG
-    std::cout << "Temp Arena Destroyed\n";
+    std::printf("Temp Arena Destroyed\n");
 #endif
   }
 
