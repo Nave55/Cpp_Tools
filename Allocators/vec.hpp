@@ -27,8 +27,6 @@ inline void print_value(char c) {
   printf("%c", c);
 }
 
-enum class Order { Asc, Desc };
-
 template <typename T>
 class Vec {
 private:
