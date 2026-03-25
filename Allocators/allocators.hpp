@@ -575,5 +575,6 @@ public:
   }
 };
 
-extern Arena arena;
-extern Stack stack;
+extern Arena arena_alloc;
+extern Stack stack_alloc;
+extern Pool pool_alloc;
