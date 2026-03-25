@@ -40,14 +40,19 @@ public:
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * 10, alignof(T)))},
         m_len{0},
-        m_capacity{10} {}
+        m_capacity{10} {
+    static_assert(sizeof(T) * 10 <= m_alloc->get_chunk_size() &&
+                  "Initial Vec capacity does not fit in a pool chunk");
+  }
 
   explicit Vec(MemAllocator& alloc, size_t sz)
       : m_alloc{&alloc},
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
-          for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
+    static_assert(sizeof(T) * sz <= m_alloc->get_chunk_size() &&
+                  "Initial Vec capacity does not fit in a pool chunk");
+    for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
   }
 
   explicit Vec(MemAllocator& alloc, size_t sz, size_t cap)
@@ -55,6 +60,8 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
         m_capacity{cap} {
+    assert(sizeof(T) * cap <= m_alloc->get_chunk_size() &&
+           "Initial Vec capacity does not fit in a pool chunk");
     for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
   }
 
@@ -64,6 +71,8 @@ public:
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))},
         m_len{lst.size()},
         m_capacity{lst.size()} {
+    assert(sizeof(T) * lst.size() <= m_alloc->get_chunk_size() &&
+           "Initial Vec capacity does not fit in a pool chunk");
     std::copy(lst.begin(), lst.end(), m_vec);
   }
 
@@ -73,6 +82,8 @@ public:
             sizeof(T) * std::max(cap, lst.size()), alignof(T)))},
         m_len{lst.size()},
         m_capacity{std::max(cap, lst.size())} {
+    assert(sizeof(T) * std::max(cap, lst.size()) <= m_alloc->get_chunk_size() &&
+           "Initial Vec capacity does not fit in a pool chunk");
     std::copy(lst.begin(), lst.end(), m_vec);
   }
 
@@ -98,6 +109,10 @@ public:
 
   Vec& operator=(const Vec&) = delete;
   Vec& operator=(Vec&&) = delete;
+
+  T* data() {
+    return m_vec;
+  }
 
   T& operator[](size_t i) noexcept {
     assert(i < m_len && "Vec::operator[] out of bounds");
@@ -234,6 +249,7 @@ public:
     }
 
     size_t new_cap = std::max(new_size, m_capacity + m_capacity / 2);
+    assert(m_alloc->supports_resize() && "Allocator Doesn't Support Resize");
 
     T* new_vec = static_cast<T*>(m_alloc->resize(
         m_vec, m_capacity * sizeof(T), new_cap * sizeof(T), alignof(T)));
