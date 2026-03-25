@@ -25,6 +25,11 @@ static inline uintptr_t alignForwardUintptr(uintptr_t p, uintptr_t alignment) {
   return (p + mask) & ~mask;
 }
 
+[[noreturn]] static inline void panic(const char* msg) {
+  std::fprintf(stderr, "PANIC: %s\n", msg);
+  std::abort();
+}
+
 // *******************************************************
 //                Allocator Interface
 // *******************************************************
@@ -107,7 +112,7 @@ public:
   }
 
   void* allocate(size_t size, size_t alignment) noexcept override {
-    assert(size > 0 && "Bytes must be greater than zero");
+    if (size <= 0) panic("Size must be greater than zero");
     if (alignment > 128) alignment = 128;
 
     void* p = m_buf + m_curr_off;
@@ -257,7 +262,7 @@ public:
 
   static constexpr size_t calc_padding_with_header(
       uintptr_t ptr, size_t alignment, size_t header_size) noexcept {
-    assert(isPowerOfTwo(alignment));
+    if (!isPowerOfTwo(alignment)) panic("Must be a power of two!");
 
     const size_t modulo = ptr & (alignment - 1);
     size_t padding = (modulo == 0) ? 0 : (alignment - modulo);
@@ -272,9 +277,9 @@ public:
 
   void* allocate(size_t size,
                  size_t alignment = DEFAULT_ALIGNMENT) noexcept override {
-    assert(isPowerOfTwo(alignment));
+    if (!isPowerOfTwo(alignment)) panic("Must be a power of two1");
 
-    assert(size > 0 && "Size must be greater than zero");
+    if (size <= 0) panic("Size must be greater than zero");
     if (alignment > 128) alignment = 128;
 
     const uintptr_t base = reinterpret_cast<uintptr_t>(m_buf);
@@ -293,8 +298,8 @@ public:
     const uintptr_t user_addr = base + new_offset;
 
     auto header = reinterpret_cast<StackHeader*>(user_addr - header_size);
-    assert(header->padding <= m_buf_len);
-    assert(header->prev_offset <= m_curr_off);
+    if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
+    if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
 
     header->prev_offset = m_curr_off;
     header->padding = padding;
@@ -328,14 +333,14 @@ public:
     const uintptr_t addr = reinterpret_cast<uintptr_t>(old_ptr);
 
     if (!(base <= addr && addr < base + m_buf_len)) {
-      assert(false && "Pointer out of bounds (resize)");
-      return nullptr;
+      panic("Pointer out of bounds (resize)");
+      // return nullptr;
     }
 
     const size_t header_size = sizeof(StackHeader);
     auto* header = reinterpret_cast<StackHeader*>(addr - header_size);
-    assert(header->padding <= m_buf_len);
-    assert(header->prev_offset <= m_curr_off);
+    if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
+    if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
 
     const size_t block_start = header->prev_offset + header->padding;
     const size_t block_size = header->alloc_size;
@@ -376,8 +381,8 @@ public:
     const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
 
     if (!(base <= addr && addr < base + m_buf_len)) {
-      assert(false && "Pointer out of bounds (free)");
-      return;
+      panic("Pointer out of bounds (free)");
+      // return;
     }
 
     const size_t header_size = sizeof(StackHeader);
@@ -388,14 +393,14 @@ public:
 
     const uintptr_t expected_addr = base + block_start;
     if (expected_addr != addr) {
-      assert(false && "Header mismatch");
-      return;
+      panic("Header mismatch");
+      // return;
     }
 
     // LIFO check
     if (addr + block_size != base + m_curr_off) {
-      assert(false && "Out-of-order free");
-      return;
+      panic("Out-of-order free");
+      // return;
     }
 
     m_curr_off = header->prev_offset;
@@ -411,8 +416,8 @@ public:
 
   void free_to_marker(size_t marker) noexcept {
     if (marker > m_curr_off) {
-      assert(false && "Invalid marker");
-      return;
+      panic("Invalid marker");
+      // return;
     }
     m_curr_off = marker;
   }
@@ -482,10 +487,10 @@ private:
 public:
   explicit Pool(size_t buf_size = MB, size_t chunk_size = 64,
                 size_t chunk_alignment = alignof(std::max_align_t)) {
-    assert(buf_size > 0);
-    assert(chunk_size > 0);
-    assert((chunk_alignment & (chunk_alignment - 1)) == 0 &&
-           "chunk_alignment must be power of two");
+    if (buf_size <= 0) panic("Buf size <= 0");
+    if (chunk_size <= 0) panic("Chunk size <= 0");
+    if (!isPowerOfTwo(chunk_alignment))
+      panic("chunk_alignment must be power of two");
 
     // Allocate the buffer internally (like Arena)
     m_buf_len = buf_size;
@@ -496,8 +501,8 @@ public:
     m_chunk_size =
         (chunk_size + (chunk_alignment - 1)) & ~(chunk_alignment - 1);
 
-    assert(m_chunk_size >= sizeof(PoolFreeNode) &&
-           "chunk_size too small for free list node");
+    if (m_chunk_size < sizeof(PoolFreeNode))
+      panic("chunk_size too small for free list node");
 
     // Build free list
     free_all();
@@ -545,7 +550,7 @@ public:
 
   // Pools do not support resize
   void* resize(void*, size_t, size_t, size_t) noexcept override {
-    return nullptr;
+    panic("Pool Can't resize");
   }
 
   bool supports_resize() const noexcept override {
