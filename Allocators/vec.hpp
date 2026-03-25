@@ -41,8 +41,8 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * 10, alignof(T)))},
         m_len{0},
         m_capacity{10} {
-    static_assert(sizeof(T) * 10 <= m_alloc->get_chunk_size() &&
-                  "Initial Vec capacity does not fit in a pool chunk");
+    assert(sizeof(T) * 10 <= m_alloc->get_chunk_size() &&
+           "Initial Vec capacity does not fit in a pool chunk");
   }
 
   explicit Vec(MemAllocator& alloc, size_t sz)
@@ -50,8 +50,8 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
-    static_assert(sizeof(T) * sz <= m_alloc->get_chunk_size() &&
-                  "Initial Vec capacity does not fit in a pool chunk");
+    assert(sizeof(T) * sz <= m_alloc->get_chunk_size() &&
+           "Initial Vec capacity does not fit in a pool chunk");
     for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
   }
 
