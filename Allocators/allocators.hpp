@@ -36,7 +36,7 @@ public:
 // *******************************************************
 //                   Arena Allocator
 // *******************************************************
-class Arena : public MemAllocator {
+class Arena final : public MemAllocator {
 private:
   friend class TempArena;
 
