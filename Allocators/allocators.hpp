@@ -120,7 +120,8 @@ public:
     void* p = m_buf + m_curr_off;
     size_t space = m_buf_len - m_curr_off;
 
-    if (!std::align(alignment, size, p, space)) return nullptr;
+    if (!std::align(alignment, size, p, space))
+      panic("Arena can't allocate. Not aligned.");
 
     m_prev_off = static_cast<unsigned char*>(p) - m_buf;
     m_curr_off = m_prev_off + size;
@@ -151,7 +152,7 @@ public:
 
     // Allocate fresh
     void* newp = allocate(new_size, alignment);
-    if (!newp) return nullptr;
+    if (!newp) panic("New Pointer wasn't allocated in arena");
 
     std::memmove(newp, old_ptr, std::min(old_size, new_size));
     return newp;
@@ -594,20 +595,20 @@ public:
 
 class TempPool {
 private:
-  Pool& pool;
-  PoolFreeNode* temp_head = nullptr;
+  Pool& m_pool;
+  PoolFreeNode* m_temp_head = nullptr;
 
 public:
   explicit TempPool(Pool& p)
-      : pool(p) {}
+      : m_pool(p) {}
 
   template <typename T>
   T* alloc() {
-    void* ptr = pool.allocate(sizeof(T), alignof(T));
+    void* ptr = m_pool.allocate(sizeof(T), alignof(T));
     auto* node = static_cast<PoolFreeNode*>(ptr);
 
-    node->temp_next = temp_head;
-    temp_head = node;
+    node->temp_next = m_temp_head;
+    m_temp_head = node;
 
     return static_cast<T*>(ptr);
   }
@@ -616,10 +617,10 @@ public:
 #ifdef DEBUG
     std::printf("Temp Pool Destroyed\n");
 #endif
-    while (temp_head) {
-      PoolFreeNode* n = temp_head;
-      temp_head = temp_head->temp_next;
-      pool.free(n);
+    while (m_temp_head) {
+      PoolFreeNode* n = m_temp_head;
+      m_temp_head = m_temp_head->temp_next;
+      m_pool.free(n);
     }
   }
 };
