@@ -232,7 +232,7 @@ public:
 
   void resize(size_t new_size) noexcept {
     if (new_size > m_capacity)
-      resize_capacity(std::max(new_size, m_capacity + m_capacity / 2));
+      m_resize_capacity(std::max(new_size, m_capacity + m_capacity / 2));
 
     for (size_t i = m_len; i < new_size; ++i) m_vec[i] = T();
 
@@ -240,19 +240,18 @@ public:
   }
 
   void reserve(size_t new_cap) noexcept {
-    if (new_cap > m_capacity) resize_capacity(new_cap);
+    if (new_cap > m_capacity) m_resize_capacity(new_cap);
   }
 
   void shrinkToFit() noexcept {
-    if (m_len < m_capacity) resize_capacity(m_len);
+    if (m_len < m_capacity) m_resize_capacity(m_len);
   }
 
   template <typename S>
-    requires std::is_same_v<S, T>
-  void pushBack(S val) noexcept {
+    requires std::is_same_v<std::remove_cvref_t<S>, T>
+  void pushBack(S&& val) noexcept {
     if (m_len == m_capacity) m_resize_capacity(m_capacity * 2);
-
-    m_vec[m_len++] = val;
+    m_vec[m_len++] = std::forward<S>(val);
   }
 
   template <typename... Args>
@@ -324,6 +323,8 @@ private:
 
       for (size_t i = 0; i < m_len; ++i)
         new (&new_vec[i]) T(std::move(m_vec[i]));
+
+      for (size_t i = 0; i < m_len; ++i) m_vec[i].~T();
 
       m_alloc->free(m_vec);
       m_vec = new_vec;
