@@ -8,6 +8,7 @@
 #include <new>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
+constexpr size_t BYTE = 1ULL;
 constexpr size_t KB = 1024ULL;
 constexpr size_t MB = KB * 1024ULL;
 constexpr size_t GB = MB * 1024ULL;
@@ -30,6 +31,12 @@ constexpr uintptr_t alignForwardUintptr(const uintptr_t p,
   std::fprintf(stderr, "PANIC: %s\n", msg);
   std::abort();
 }
+
+enum class AllocType {
+  Arena,
+  Stack,
+  Pool,
+};
 
 // *******************************************************
 //                Allocator Interface
@@ -57,6 +64,8 @@ public:
   virtual size_t get_free() const noexcept = 0;
 
   virtual size_t get_chunk_size() const noexcept = 0;
+
+  virtual AllocType get_type() const noexcept = 0;
 };
 
 // *******************************************************
@@ -203,6 +212,10 @@ public:
 
   size_t get_chunk_size() const noexcept override {
     return m_buf_len;
+  }
+
+  AllocType get_type() const noexcept override {
+    return AllocType::Arena;
   }
 };
 
@@ -451,6 +464,10 @@ public:
   size_t get_chunk_size() const noexcept override {
     return m_buf_len;
   }
+
+  AllocType get_type() const noexcept override {
+    return AllocType::Stack;
+  }
 };
 
 class TempStack {
@@ -523,7 +540,6 @@ public:
 #endif
   }
 
-  // --- Alloc ---
   void* allocate(size_t = 0, size_t = 0) noexcept override {
     if (!m_head) return nullptr;
     PoolFreeNode* node = m_head;
@@ -536,7 +552,6 @@ public:
     return static_cast<T*>(allocate());
   }
 
-  // --- Free ---
   void free(void* ptr) noexcept override {
     if (!ptr) return;
     auto* node = static_cast<PoolFreeNode*>(ptr);
@@ -544,7 +559,6 @@ public:
     m_head = node;
   }
 
-  // --- Free all ---
   void free_all() noexcept override {
     m_head = nullptr;
     size_t count = m_buf_len / m_chunk_size;
@@ -590,6 +604,10 @@ public:
     size_t n = 0;
     for (PoolFreeNode* p = m_head; p; p = p->next) n++;
     return n;
+  }
+
+  AllocType get_type() const noexcept override {
+    return AllocType::Pool;
   }
 };
 
