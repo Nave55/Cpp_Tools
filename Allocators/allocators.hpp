@@ -53,19 +53,19 @@ public:
 
   virtual void free(void* ptr) noexcept = 0;
 
-  virtual void free_all() noexcept = 0;
+  virtual void freeAll() noexcept = 0;
 
-  virtual bool supports_resize() const noexcept = 0;
+  virtual bool supportsResize() const noexcept = 0;
 
-  virtual size_t get_used() const noexcept = 0;
+  virtual size_t getUsed() const noexcept = 0;
 
-  virtual size_t get_size() const noexcept = 0;
+  virtual size_t getSize() const noexcept = 0;
 
-  virtual size_t get_free() const noexcept = 0;
+  virtual size_t getFree() const noexcept = 0;
 
-  virtual size_t get_chunk_size() const noexcept = 0;
+  virtual size_t getChunkSize() const noexcept = 0;
 
-  virtual AllocType get_type() const noexcept = 0;
+  virtual AllocType getType() const noexcept = 0;
 };
 
 // *******************************************************
@@ -172,7 +172,7 @@ public:
     panic("Arena Can't use free");
   }
 
-  void free_all() noexcept override {
+  void freeAll() noexcept override {
     m_prev_off = m_curr_off = 0;
   }
 
@@ -194,27 +194,27 @@ public:
     std::printf("Size of Arena: %zu\n", m_buf_len);
   }
 
-  bool supports_resize() const noexcept override {
+  bool supportsResize() const noexcept override {
     return true;
   }
 
-  size_t get_used() const noexcept override {
+  size_t getUsed() const noexcept override {
     return m_curr_off;
   }
 
-  size_t get_size() const noexcept override {
+  size_t getSize() const noexcept override {
     return m_buf_len;
   }
 
-  size_t get_free() const noexcept override {
-    return get_size() - get_used();
+  size_t getFree() const noexcept override {
+    return getSize() - getUsed();
   }
 
-  size_t get_chunk_size() const noexcept override {
+  size_t getChunkSize() const noexcept override {
     return m_buf_len;
   }
 
-  AllocType get_type() const noexcept override {
+  AllocType getType() const noexcept override {
     return AllocType::Arena;
   }
 };
@@ -424,7 +424,7 @@ public:
     m_curr_off = header->prev_offset;
   }
 
-  void free_all() noexcept override {
+  void freeAll() noexcept override {
     m_curr_off = 0;
   }
 
@@ -445,27 +445,27 @@ public:
     std::printf("Size of Arena: %zu\n", m_buf_len);
   }
 
-  bool supports_resize() const noexcept override {
+  bool supportsResize() const noexcept override {
     return true;
   }
 
-  size_t get_used() const noexcept override {
+  size_t getUsed() const noexcept override {
     return m_curr_off;
   }
 
-  size_t get_size() const noexcept override {
+  size_t getSize() const noexcept override {
     return m_buf_len;
   }
 
-  size_t get_free() const noexcept override {
-    return get_size() - get_used();
+  size_t getFree() const noexcept override {
+    return getSize() - getUsed();
   }
 
-  size_t get_chunk_size() const noexcept override {
+  size_t getChunkSize() const noexcept override {
     return m_buf_len;
   }
 
-  AllocType get_type() const noexcept override {
+  AllocType getType() const noexcept override {
     return AllocType::Stack;
   }
 };
@@ -529,7 +529,7 @@ public:
       panic("chunk_size too small for free list node");
 
     // Build free list
-    free_all();
+    freeAll();
   }
 
   ~Pool() {
@@ -559,7 +559,7 @@ public:
     m_head = node;
   }
 
-  void free_all() noexcept override {
+  void freeAll() noexcept override {
     m_head = nullptr;
     size_t count = m_buf_len / m_chunk_size;
     for (size_t i = 0; i < count; ++i) {
@@ -574,11 +574,11 @@ public:
     panic("Pool Can't resize");
   }
 
-  bool supports_resize() const noexcept override {
+  bool supportsResize() const noexcept override {
     return false;
   }
 
-  size_t get_used() const noexcept override {
+  size_t getUsed() const noexcept override {
     size_t total_chunks = m_buf_len / m_chunk_size;
 
     size_t free_chunks = 0;
@@ -588,15 +588,15 @@ public:
     return used_chunks * m_chunk_size;
   }
 
-  size_t get_size() const noexcept override {
+  size_t getSize() const noexcept override {
     return m_buf_len;
   }
 
-  size_t get_free() const noexcept override {
-    return get_size() - get_used();
+  size_t getFree() const noexcept override {
+    return getSize() - getUsed();
   }
 
-  size_t get_chunk_size() const noexcept override {
+  size_t getChunkSize() const noexcept override {
     return m_chunk_size;
   }
 
@@ -606,7 +606,7 @@ public:
     return n;
   }
 
-  AllocType get_type() const noexcept override {
+  AllocType getType() const noexcept override {
     return AllocType::Pool;
   }
 };
