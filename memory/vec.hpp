@@ -5,28 +5,6 @@
 #include "allocators.hpp"
 
 template <typename T>
-void printValue(const T& v);
-
-inline void printValue(int v) {
-  printf("%d", v);
-}
-inline void printValue(size_t v) {
-  printf("%zu", v);
-}
-inline void printValue(float v) {
-  printf("%f", v);
-}
-inline void printValue(double v) {
-  printf("%f", v);
-}
-inline void printValue(const char* s) {
-  printf("%s", s);
-}
-inline void printValue(char c) {
-  printf("%c", c);
-}
-
-template <typename T>
 class Vec {
 private:
   MemAllocator* m_alloc;
@@ -197,13 +175,13 @@ public:
     for (size_t i = 0; i < m_len; i++) {
       if (i == 0) {
         std::printf("[");
-        printValue(m_vec[i]);
+        m_printValue(m_vec[i]);
       } else if (i < m_len - 1) {
         std::printf(", ");
-        printValue(m_vec[i]);
+        m_printValue(m_vec[i]);
       } else {
         std::printf(", ");
-        printValue(m_vec[i]);
+        m_printValue(m_vec[i]);
         std::printf("]\n");
       }
 
@@ -213,11 +191,11 @@ public:
 
   void printInfo() const noexcept {
     std::printf("length: ");
-    printValue(m_len);
+    m_printValue(m_len);
     std::printf(", capacity: ");
-    printValue(m_capacity);
+    m_printValue(m_capacity);
     std::printf(", type: ");
-    printValue(type());
+    m_printValue(type());
     std::printf("\n");
   }
 
@@ -396,5 +374,29 @@ private:
       m_vec = new_vec;
       m_capacity = new_cap;
     }
+  }
+
+  void m_printValue(int v) const noexcept {
+    printf("%d", v);
+  }
+
+  void m_printValue(size_t v) const noexcept {
+    printf("%zu", v);
+  }
+
+  void m_printValue(float v) const noexcept {
+    printf("%f", v);
+  }
+
+  void m_printValue(double v) const noexcept {
+    printf("%f", v);
+  }
+
+  void m_printValue(const char* s) const noexcept {
+    printf("%s", s);
+  }
+
+  void m_printValue(char c) const noexcept {
+    printf("%c", c);
   }
 };
