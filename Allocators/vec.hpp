@@ -40,7 +40,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * 10, alignof(T)))},
         m_len{0},
         m_capacity{10} {
-    if (sizeof(T) * 10 > m_alloc->get_chunk_size()) {
+    if (sizeof(T) * 10 > m_alloc->getChunkSize()) {
       panic("Initial Vec capacity does not fit in a pool chunk");
     }
   }
@@ -50,7 +50,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))},
         m_len{sz},
         m_capacity{sz} {
-    if (sizeof(T) * sz > m_alloc->get_chunk_size())
+    if (sizeof(T) * sz > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
 
     for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
@@ -61,7 +61,7 @@ public:
         m_vec{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))},
         m_len{sz},
         m_capacity{cap} {
-    if (sizeof(T) * cap > m_alloc->get_chunk_size())
+    if (sizeof(T) * cap > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
 
     for (size_t i = 0; i < sz; ++i) m_vec[i] = T();
@@ -73,7 +73,7 @@ public:
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))},
         m_len{lst.size()},
         m_capacity{lst.size()} {
-    if (sizeof(T) * lst.size() > m_alloc->get_chunk_size())
+    if (sizeof(T) * lst.size() > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
 
     std::copy(lst.begin(), lst.end(), m_vec);
@@ -85,7 +85,7 @@ public:
             sizeof(T) * std::max(cap, lst.size()), alignof(T)))},
         m_len{lst.size()},
         m_capacity{std::max(cap, lst.size())} {
-    if (sizeof(T) * std::max(cap, lst.size()) > m_alloc->get_chunk_size())
+    if (sizeof(T) * std::max(cap, lst.size()) > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
 
     std::copy(lst.begin(), lst.end(), m_vec);
@@ -236,27 +236,27 @@ public:
   }
 
   void extend(size_t new_size, T val = T()) noexcept {
-    if (new_size > m_capacity) m_resize_capacity(new_size);
+    if (new_size > m_capacity) m_resizeCapacity(new_size);
     for (size_t i = m_len; i < new_size; ++i) m_vec[i] = val;
     m_len = new_size;
   }
 
   void reserve(size_t new_cap) noexcept {
-    if (new_cap > m_capacity) m_resize_capacity(new_cap);
+    if (new_cap > m_capacity) m_resizeCapacity(new_cap);
   }
 
   void shrink(size_t new_size) noexcept {
-    if (m_len < m_capacity && m_len > 0) m_resize_capacity(new_size);
+    if (m_len < m_capacity && m_len > 0) m_resizeCapacity(new_size);
   }
 
   void shrinkToFit() noexcept {
-    if (m_len < m_capacity) m_resize_capacity(m_len);
+    if (m_len < m_capacity) m_resizeCapacity(m_len);
   }
 
   template <typename S>
     requires std::is_same_v<std::remove_cvref_t<S>, T>
   void pushBack(S&& val) noexcept {
-    if (m_len == m_capacity) m_resize_capacity(m_capacity * 2);
+    if (m_len == m_capacity) m_resizeCapacity(m_capacity * 2);
     m_vec[m_len++] = std::forward<S>(val);
   }
 
@@ -264,7 +264,7 @@ public:
     requires(sizeof...(Args) == 1 &&
              std::is_same_v<T, std::remove_cvref_t<Args>...>)
   void emplaceBack(Args&&... args) noexcept {
-    if (m_len == m_capacity) m_resize_capacity(m_capacity * 2);
+    if (m_len == m_capacity) m_resizeCapacity(m_capacity * 2);
 
     new (&m_vec[m_len]) T(std::forward<Args>(args)...);
     ++m_len;
@@ -275,7 +275,7 @@ public:
   void insert(S&& val, size_t ind) noexcept {
     if (ind > m_len) ind = m_len;
 
-    if (m_len == m_capacity) m_resize_capacity(m_capacity * 2);
+    if (m_len == m_capacity) m_resizeCapacity(m_capacity * 2);
 
     for (size_t i = m_len; i > ind; --i) m_vec[i] = m_vec[i - 1];
 
@@ -311,11 +311,11 @@ public:
   }
 
 private:
-  void m_resize_capacity(size_t new_cap) {
+  void m_resizeCapacity(size_t new_cap) {
     size_t old_bytes = m_capacity * sizeof(T);
     size_t new_bytes = new_cap * sizeof(T);
 
-    if (m_alloc->supports_resize()) {
+    if (m_alloc->supportsResize()) {
       T* new_vec = static_cast<T*>(
           m_alloc->resize(m_vec, old_bytes, new_bytes, alignof(T)));
       if (!new_vec) panic("Allocator resize failed");
