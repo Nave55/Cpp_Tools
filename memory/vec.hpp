@@ -172,9 +172,9 @@ public:
 
   void printInfo() const noexcept {
     std::printf("length: ");
-    print_value(m_len);
+    printValue(m_len);
     std::printf(", capacity: ");
-    print_value(m_capacity);
+    printValue(m_capacity);
     std::printf(", type: ");
     printValue(type());
     std::printf("\n");
