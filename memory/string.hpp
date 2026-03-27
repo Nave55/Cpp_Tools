@@ -275,14 +275,6 @@ public:
     }
   }
 
-  template <typename F>
-  void mapIter(F func) {
-    for (size_t i = 0; i < m_len; ++i) {
-      func(m_string[i]);  // mutate in place
-    }
-    m_string[m_len] = '\0';
-  }
-
 private:
   void m_resizeCapacity(size_t new_cap) {
     size_t old_bytes = m_capacity * sizeof(char);
