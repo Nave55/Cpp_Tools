@@ -6,9 +6,7 @@
 #include "allocators.hpp"
 #include "vec.hpp"
 
-// -----------------------------------------------------------------------------
 // Node
-// -----------------------------------------------------------------------------
 template <typename K, typename V>
 struct HashNode {
   size_t hash;
@@ -29,9 +27,7 @@ struct HashNode {
         next(nullptr) {}
 };
 
-// -----------------------------------------------------------------------------
 // UnorderedMap - (Arena/Stack/Pool)
-// -----------------------------------------------------------------------------
 template <typename K, typename V, typename Hash = std::hash<K>,
           typename KeyEq = std::equal_to<K>>
 class UnorderedMap {
@@ -152,9 +148,6 @@ public:
     return *this;
   }
 
-  // ---------------------------------------------------------------------------
-  // Basic API
-  // ---------------------------------------------------------------------------
   size_t len() const {
     return m_len;
   }
@@ -286,9 +279,7 @@ public:
     m_len = 0;
   }
 
-  // ---------------------------------------------------------------------------
   // Rehash (buckets only, nodes stay in slabs)
-  // ---------------------------------------------------------------------------
   void rehash(size_t new_cap) {
     new_cap = m_nextPow2(new_cap);
     const size_t old_cap = m_cap;
@@ -315,9 +306,7 @@ public:
     m_cap = new_cap;
   }
 
-  // ---------------------------------------------------------------------------
   // Iteration
-  // ---------------------------------------------------------------------------
   class iterator {
   public:
     UnorderedMap* map;
