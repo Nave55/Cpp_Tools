@@ -230,17 +230,18 @@ public:
     return -1;
   }
 
-  void resize(size_t new_size) noexcept {
-    if (new_size > m_capacity)
-      m_resize_capacity(std::max(new_size, m_capacity + m_capacity / 2));
-
-    for (size_t i = m_len; i < new_size; ++i) m_vec[i] = T();
-
+  void extend(size_t new_size, T val = T()) noexcept {
+    if (new_size > m_capacity) m_resize_capacity(new_size);
+    for (size_t i = m_len; i < new_size; ++i) m_vec[i] = val;
     m_len = new_size;
   }
 
   void reserve(size_t new_cap) noexcept {
     if (new_cap > m_capacity) m_resize_capacity(new_cap);
+  }
+
+  void shrink(size_t new_size) noexcept {
+    if (m_len < m_capacity && m_len > 0) m_resize_capacity(new_size);
   }
 
   void shrinkToFit() noexcept {
