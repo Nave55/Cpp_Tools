@@ -33,7 +33,7 @@ public:
 private:
   using Node = HashNode<K, V>;
 
-  AllocatorInterface* m_alloc;
+  MemAllocator* m_alloc;
   size_t m_len;
   size_t m_cap;
   Node** m_buckets;
@@ -42,7 +42,7 @@ private:
 
 public:
   // constructors
-  explicit UnorderedMap(AllocatorInterface& alloc, size_t cap = 16)
+  explicit UnorderedMap(MemAllocator& alloc, size_t cap = 16)
       : m_alloc(&alloc),
         m_len(0),
         m_cap(cap),
