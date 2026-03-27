@@ -42,9 +42,9 @@ enum class AllocType {
 //                Allocator Interface
 // *******************************************************
 
-class MemAllocator {
+class AllocatorInterface {
 public:
-  virtual ~MemAllocator() = default;
+  virtual ~AllocatorInterface() = default;
 
   virtual void* allocate(size_t bytes, size_t alignment) noexcept = 0;
 
@@ -72,7 +72,7 @@ public:
 //                   Arena Allocator
 // *******************************************************
 
-class Arena final : public MemAllocator {
+class Arena final : public AllocatorInterface {
 private:
   friend class TempArena;
 
@@ -254,7 +254,7 @@ struct StackHeader {
   size_t alloc_size;   // size of allocation
 };
 
-class Stack final : public MemAllocator {
+class Stack final : public AllocatorInterface {
 private:
   friend class TempStack;
   unsigned char* m_buf = nullptr;
@@ -499,7 +499,7 @@ struct PoolFreeNode {
   PoolFreeNode* temp_next;  // temp scope tracking
 };
 
-class Pool final : public MemAllocator {
+class Pool final : public AllocatorInterface {
 private:
   friend class TempPool;
   unsigned char* m_buf = nullptr;
