@@ -5,24 +5,24 @@
 #include "allocators.hpp"
 
 template <typename T>
-void print_value(const T& v);
+void printValue(const T& v);
 
-inline void print_value(int v) {
+inline void printValue(int v) {
   printf("%d", v);
 }
-inline void print_value(size_t v) {
+inline void printValue(size_t v) {
   printf("%zu", v);
 }
-inline void print_value(float v) {
+inline void printValue(float v) {
   printf("%f", v);
 }
-inline void print_value(double v) {
+inline void printValue(double v) {
   printf("%f", v);
 }
-inline void print_value(const char* s) {
+inline void printValue(const char* s) {
   printf("%s", s);
 }
-inline void print_value(char c) {
+inline void printValue(char c) {
   printf("%c", c);
 }
 
@@ -156,13 +156,13 @@ public:
     for (size_t i = 0; i < m_len; i++) {
       if (i == 0) {
         std::printf("[");
-        print_value(m_vec[i]);
+        printValue(m_vec[i]);
       } else if (i < m_len - 1) {
         std::printf(", ");
-        print_value(m_vec[i]);
+        printValue(m_vec[i]);
       } else {
         std::printf(", ");
-        print_value(m_vec[i]);
+        printValue(m_vec[i]);
         std::printf("]\n");
       }
 
@@ -176,7 +176,7 @@ public:
     std::printf(", capacity: ");
     print_value(m_capacity);
     std::printf(", type: ");
-    print_value(type());
+    printValue(type());
     std::printf("\n");
   }
 
