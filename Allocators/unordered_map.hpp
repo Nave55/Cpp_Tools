@@ -1,4 +1,5 @@
 #pragma once
+
 #include <functional>
 #include <utility>
 #include "allocators.hpp"
@@ -32,7 +33,7 @@ public:
 private:
   using Node = HashNode<K, V>;
 
-  MemAllocator* m_alloc;
+  AllocatorInterface* m_alloc;
   size_t m_len;
   size_t m_cap;
   Node** m_buckets;
@@ -41,7 +42,7 @@ private:
 
 public:
   // constructors
-  explicit UnorderedMap(MemAllocator& alloc, size_t cap = 16)
+  explicit UnorderedMap(AllocatorInterface& alloc, size_t cap = 16)
       : m_alloc(&alloc),
         m_len(0),
         m_cap(cap),
@@ -202,7 +203,7 @@ public:
   }
 
   // ---------------- insert_or_assign ----------------
-  void insert_or_assign(const K& key, const V& value) {
+  void insert(const K& key, const V& value) {
     if (m_loadFactor() > 0.75f) rehash(m_cap * 2);
 
     size_t i = m_idx(key);
@@ -235,15 +236,10 @@ public:
         else
           m_buckets[i] = curr->next;
 
-        // Only destroy + free if allocator supports free()
         if (m_alloc->getType() == AllocType::Pool) {
           curr->~Node();
           m_alloc->free(curr);
         }
-
-        // Otherwise: do NOT destroy the node.
-        // It becomes unreachable and harmless.
-        // Arena/Stack will reclaim it when reset.
 
         --m_len;
         return true;
