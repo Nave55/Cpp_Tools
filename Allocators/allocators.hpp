@@ -182,8 +182,8 @@ public:
   }
 
   template <typename Old, typename New>
-  New* resize_typed(Old* old_mem, size_t old_count = 1, size_t new_count = 1,
-                    size_t alignment = alignof(New)) noexcept {
+  New* resizeTyped(Old* old_mem, size_t old_count = 1, size_t new_count = 1,
+                   size_t alignment = alignof(New)) noexcept {
     return static_cast<New*>(resize(old_mem, sizeof(Old) * old_count,
                                     sizeof(New) * new_count, alignment));
   }
@@ -278,21 +278,6 @@ public:
   Stack(const Stack&) = delete;
   Stack& operator=(const Stack&) = delete;
 
-  static constexpr size_t calc_padding_with_header(
-      uintptr_t ptr, size_t alignment, size_t header_size) noexcept {
-    if (!isPowerOfTwo(alignment)) panic("Must be a power of two!");
-
-    const size_t modulo = ptr & (alignment - 1);
-    size_t padding = (modulo == 0) ? 0 : (alignment - modulo);
-
-    if (padding < header_size) {
-      size_t needed = header_size - padding;
-      padding += ((needed + alignment - 1) / alignment) * alignment;
-    }
-
-    return padding;
-  }
-
   void* allocate(size_t size,
                  size_t alignment = DEFAULT_ALIGNMENT) noexcept override {
     if (!isPowerOfTwo(alignment)) panic("Must be a power of two1");
@@ -305,7 +290,7 @@ public:
 
     const size_t header_size = sizeof(StackHeader);
     const size_t padding =
-        calc_padding_with_header(curr_addr, alignment, header_size);
+        m_calcPaddingWithHeader(curr_addr, alignment, header_size);
 
     const size_t new_offset = m_curr_off + padding;
     if (new_offset < m_curr_off || new_offset > m_buf_len) return nullptr;
@@ -352,7 +337,6 @@ public:
 
     if (!(base <= addr && addr < base + m_buf_len)) {
       panic("Pointer out of bounds (resize)");
-      // return nullptr;
     }
 
     const size_t header_size = sizeof(StackHeader);
@@ -400,7 +384,6 @@ public:
 
     if (!(base <= addr && addr < base + m_buf_len)) {
       panic("Pointer out of bounds (free)");
-      // return;
     }
 
     const size_t header_size = sizeof(StackHeader);
@@ -418,7 +401,6 @@ public:
     // LIFO check
     if (addr + block_size != base + m_curr_off) {
       panic("Out-of-order free");
-      // return;
     }
 
     m_curr_off = header->prev_offset;
@@ -428,11 +410,11 @@ public:
     m_curr_off = 0;
   }
 
-  size_t get_marker() const noexcept {
+  size_t getMarker() const noexcept {
     return m_curr_off;
   }
 
-  void free_to_marker(size_t marker) noexcept {
+  void freeToMarker(size_t marker) noexcept {
     if (marker > m_curr_off) {
       panic("Invalid marker");
       // return;
@@ -467,6 +449,23 @@ public:
 
   AllocType getType() const noexcept override {
     return AllocType::Stack;
+  }
+
+private:
+  static constexpr size_t m_calcPaddingWithHeader(uintptr_t ptr,
+                                                  size_t alignment,
+                                                  size_t header_size) noexcept {
+    if (!isPowerOfTwo(alignment)) panic("Must be a power of two!");
+
+    const size_t modulo = ptr & (alignment - 1);
+    size_t padding = (modulo == 0) ? 0 : (alignment - modulo);
+
+    if (padding < header_size) {
+      size_t needed = header_size - padding;
+      padding += ((needed + alignment - 1) / alignment) * alignment;
+    }
+
+    return padding;
   }
 };
 
@@ -600,14 +599,14 @@ public:
     return m_chunk_size;
   }
 
-  size_t count_free_nodes() const noexcept {
+  AllocType getType() const noexcept override {
+    return AllocType::Pool;
+  }
+
+  size_t countFreeNodes() const noexcept {
     size_t n = 0;
     for (PoolFreeNode* p = m_head; p; p = p->next) n++;
     return n;
-  }
-
-  AllocType getType() const noexcept override {
-    return AllocType::Pool;
   }
 };
 
