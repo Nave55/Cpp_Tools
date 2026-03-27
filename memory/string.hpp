@@ -217,19 +217,8 @@ public:
   template <typename S>
     requires std::is_same_v<std::remove_cvref_t<S>, char>
   void pushBack(S&& val) noexcept {
-    // need space for val + '\0'
     if (m_len + 1 >= m_capacity) m_resizeCapacity(m_capacity * 2);
     m_string[m_len++] = std::forward<S>(val);
-    m_string[m_len] = '\0';
-  }
-
-  template <typename... Args>
-    requires(sizeof...(Args) == 1 &&
-             std::is_same_v<char, std::remove_cvref_t<Args>...>)
-  void emplaceBack(Args&&... args) noexcept {
-    if (m_len + 1 >= m_capacity) m_resizeCapacity(m_capacity * 2);
-    new (&m_string[m_len]) char(std::forward<Args>(args)...);
-    ++m_len;
     m_string[m_len] = '\0';
   }
 
