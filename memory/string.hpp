@@ -121,7 +121,6 @@ public:
       m_resizeCapacity(new_cap);
     }
 
-    // copy including '\0'
     std::memcpy(m_string + m_len, str, n + 1);
     m_len += n;
 
@@ -163,6 +162,24 @@ public:
   void clear() noexcept {
     m_len = 0;
     if (m_string) m_string[0] = '\0';
+  }
+
+  void toLower() noexcept {
+    for (size_t i = 0; i < m_len; ++i) {
+      char tmp = m_string[i];
+      if (tmp >= 65 && tmp <= 90) {
+        m_string[i] = tmp + 32;
+      }
+    }
+  }
+
+  void toUpper() noexcept {
+    for (size_t i = 0; i < m_len; ++i) {
+      char tmp = m_string[i];
+      if (tmp >= 97 && tmp <= 122) {
+        m_string[i] = tmp - 32;
+      }
+    }
   }
 
   void sort() noexcept {
