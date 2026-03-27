@@ -23,10 +23,12 @@ public:
 
 template <typename K, typename V, typename Hash = std::hash<K>,
           typename KeyEq = std::equal_to<K>>
-class HashMap {
+class UnorderedMap {
+  // public member variables
 public:
   class iterator;
 
+  // private member variables
 private:
   using Node = HashNode<K, V>;
 
@@ -38,7 +40,8 @@ private:
   KeyEq m_eq;
 
 public:
-  explicit HashMap(MemAllocator& alloc, size_t cap = 16)
+  // constructors
+  explicit UnorderedMap(MemAllocator& alloc, size_t cap = 16)
       : m_alloc(&alloc),
         m_len(0),
         m_cap(cap),
@@ -46,14 +49,14 @@ public:
     for (size_t i = 0; i < cap; ++i) m_buckets[i] = nullptr;
   }
 
-  ~HashMap() {
+  ~UnorderedMap() {
     // nothing
   }
 
-  HashMap(const HashMap&) = delete;
-  HashMap& operator=(const HashMap&) = delete;
+  UnorderedMap(const UnorderedMap&) = delete;
+  UnorderedMap& operator=(const UnorderedMap&) = delete;
 
-  HashMap(HashMap&& o) noexcept
+  UnorderedMap(UnorderedMap&& o) noexcept
       : m_alloc(o.m_alloc),
         m_len(o.m_len),
         m_cap(o.m_cap),
@@ -66,7 +69,7 @@ public:
     o.m_cap = 0;
   }
 
-  HashMap& operator=(HashMap&& o) noexcept {
+  UnorderedMap& operator=(UnorderedMap&& o) noexcept {
     if (this == &o) return *this;
 
     m_alloc = o.m_alloc;
@@ -306,6 +309,7 @@ public:
     return m_cap;
   }
 
+  // private functions
 private:
   size_t m_idx(const K& key) const {
     return m_hash(key) % m_cap;
@@ -324,20 +328,19 @@ private:
 // ================= ITERATOR =================
 
 template <typename K, typename V, typename Hash, typename KeyEq>
-class HashMap<K, V, Hash, KeyEq>::iterator {
+class UnorderedMap<K, V, Hash, KeyEq>::iterator {
 public:
-  using Node = typename HashMap::Node;
+  using Node = typename UnorderedMap::Node;
 
-  HashMap* map;
+  UnorderedMap* map;
   size_t bucket;
   Node* node;
 
-  iterator(HashMap* m, size_t b, Node* n)
+  iterator(UnorderedMap* m, size_t b, Node* n)
       : map(m),
         bucket(b),
         node(n) {}
 
-  // This is what structured bindings use
   auto operator*() const {
     return std::pair<const K&, V&>(node->key, node->value);
   }
