@@ -235,8 +235,16 @@ public:
         else
           m_buckets[i] = curr->next;
 
-        curr->~Node();
-        if (m_alloc->getType() == AllocType::Pool) m_alloc->free(curr);
+        // Only destroy + free if allocator supports free()
+        if (m_alloc->getType() == AllocType::Pool) {
+          curr->~Node();
+          m_alloc->free(curr);
+        }
+
+        // Otherwise: do NOT destroy the node.
+        // It becomes unreachable and harmless.
+        // Arena/Stack will reclaim it when reset.
+
         --m_len;
         return true;
       }
@@ -245,7 +253,6 @@ public:
     }
     return false;
   }
-
   // ---------------- find ----------------
   V* find(const K& key) {
     size_t i = m_idx(key);
