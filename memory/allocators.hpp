@@ -91,7 +91,7 @@ public:
   ~Arena() {
     ::operator delete[](m_buf, m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-    std::printf("Arena destroyed\n");
+// std::printf("Arena destroyed\n");
 #endif
   }
 
@@ -235,7 +235,7 @@ public:
     arena.m_prev_off = m_prev_off;
     arena.m_curr_off = m_curr_off;
 #if DEBUG
-    std::printf("Temp Arena Destroyed\n");
+    // std::printf("Temp Arena Destroyed\n");
 #endif
   }
 
@@ -271,7 +271,7 @@ public:
   ~Stack() {
     ::operator delete[](m_buf, m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-    std::printf("Stack destroyed\n");
+    // std::printf("Stack destroyed\n");
 #endif
   }
 
@@ -301,12 +301,12 @@ public:
     const uintptr_t user_addr = base + new_offset;
 
     auto header = reinterpret_cast<StackHeader*>(user_addr - header_size);
-    if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
-    if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
-
     header->prev_offset = m_curr_off;
     header->padding = padding;
     header->alloc_size = size;
+
+    if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
+    if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
 
     m_curr_off = end_offset;
 
@@ -388,6 +388,8 @@ public:
 
     const size_t header_size = sizeof(StackHeader);
     auto* header = reinterpret_cast<StackHeader*>(addr - header_size);
+    if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
+    if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
 
     const size_t block_start = header->prev_offset + header->padding;
     const size_t block_size = header->alloc_size;
@@ -482,7 +484,7 @@ public:
   ~TempStack() {
     m_stack.m_curr_off = m_curr_offset;
 #ifdef DEBUG
-    std::printf("Temp Stack Destroyed\n");
+    // std::printf("Temp Stack Destroyed\n");
 #endif
   }
 
@@ -535,7 +537,7 @@ public:
     ::operator delete[](m_buf, m_buf_len,
                         std::align_val_t{alignof(std::max_align_t)});
 #ifdef DEBUG
-    std::printf("Pool Destroyed\n");
+    // std::printf("Pool Destroyed\n");
 #endif
   }
 
@@ -632,7 +634,7 @@ public:
 
   ~TempPool() {
 #ifdef DEBUG
-    std::printf("Temp Pool Destroyed\n");
+    // std::printf("Temp Pool Destroyed\n");
 #endif
     while (m_temp_head) {
       PoolFreeNode* n = m_temp_head;
