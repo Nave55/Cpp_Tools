@@ -6,6 +6,7 @@
 #include <cstring>
 #include <memory>
 #include <new>
+#include <type_traits>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
 constexpr size_t BYTE = 1ULL;
@@ -13,11 +14,17 @@ constexpr size_t KB = 1024ULL;
 constexpr size_t MB = KB * 1024ULL;
 constexpr size_t GB = MB * 1024ULL;
 
+[[noreturn]] static inline void panic(const char* msg) {
+  std::fprintf(stderr, "PANIC: %s\n", msg);
+  abort();
+}
+
 constexpr bool isPowerOfTwo(const size_t x) {
   return x != 0 && (x & (x - 1)) == 0;
 }
 
 constexpr size_t alignForwardSize(const size_t size, const size_t alignment) {
+  if (!isPowerOfTwo(alignment)) panic("Not Aligned");
   return (size + (alignment - 1)) & ~(alignment - 1);
 }
 
@@ -25,11 +32,6 @@ constexpr uintptr_t alignForwardUintptr(const uintptr_t p,
                                         const uintptr_t alignment) {
   uintptr_t mask = alignment - 1;
   return (p + mask) & ~mask;
-}
-
-[[noreturn]] static inline void panic(const char* msg) {
-  std::fprintf(stderr, "PANIC: %s\n", msg);
-  std::abort();
 }
 
 enum class AllocType {
@@ -89,7 +91,7 @@ public:
   }
 
   ~Arena() {
-    ::operator delete[](m_buf, m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT});
+    ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
 // std::printf("Arena destroyed\n");
 #endif
@@ -109,8 +111,7 @@ public:
 
   Arena& operator=(Arena&& o) noexcept {
     if (this != &o) {
-      ::operator delete[](m_buf, m_buf_len,
-                          std::align_val_t{DEFAULT_ALIGNMENT});
+      ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
       m_buf = o.m_buf;
       m_buf_len = o.m_buf_len;
       m_prev_off = o.m_prev_off;
@@ -269,7 +270,7 @@ public:
   }
 
   ~Stack() {
-    ::operator delete[](m_buf, m_buf_len, std::align_val_t{DEFAULT_ALIGNMENT});
+    ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
     // std::printf("Stack destroyed\n");
 #endif
@@ -534,8 +535,7 @@ public:
   }
 
   ~Pool() {
-    ::operator delete[](m_buf, m_buf_len,
-                        std::align_val_t{alignof(std::max_align_t)});
+    ::operator delete[](m_buf, std::align_val_t{alignof(std::max_align_t)});
 #ifdef DEBUG
     // std::printf("Pool Destroyed\n");
 #endif
