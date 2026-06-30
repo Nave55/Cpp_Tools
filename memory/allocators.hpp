@@ -278,7 +278,7 @@ public:
 
   void* allocate(size_t size,
                  size_t alignment = DEFAULT_ALIGNMENT) noexcept override {
-    if (!isPowerOfTwo(alignment)) panic("Must be a power of two1");
+    if (!isPowerOfTwo(alignment)) panic("Must be a power of two");
 
     if (size <= 0) panic("Size must be greater than zero");
     if (alignment > 128) alignment = 128;
