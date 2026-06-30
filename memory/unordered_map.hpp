@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
-#include <utility>
 #include "allocators.hpp"
 #include "vec.hpp"
 
@@ -30,7 +28,7 @@ struct HashNode {
 // UnorderedMap - (Arena/Stack/Pool)
 template <typename K, typename V, typename Hash = std::hash<K>,
           typename KeyEq = std::equal_to<K>>
-class UnorderedMap {
+class HashMap {
   using Node = HashNode<K, V>;
 
 public:
@@ -51,7 +49,7 @@ private:
   size_t m_slab_bytes;  // bytes per slab
 
 public:
-  explicit UnorderedMap(size_t cap = 16, MemAllocator& alloc = arena_alloc)
+  explicit HashMap(size_t cap = 16, MemAllocator& alloc = arena_alloc)
       : m_alloc(&alloc),
         m_len(0),
         m_cap(m_nextPow2(cap)),
@@ -104,7 +102,7 @@ public:
     }
   }
 
-  ~UnorderedMap() {
+  ~HashMap() {
     clear();
 
     if (m_can_free) {
@@ -116,10 +114,10 @@ public:
     }
   }
 
-  UnorderedMap(const UnorderedMap&) = delete;
-  UnorderedMap& operator=(const UnorderedMap&) = delete;
+  HashMap(const HashMap&) = delete;
+  HashMap& operator=(const HashMap&) = delete;
 
-  UnorderedMap(UnorderedMap&& o) noexcept
+  HashMap(HashMap&& o) noexcept
       : m_alloc(o.m_alloc),
         m_len(o.m_len),
         m_cap(o.m_cap),
@@ -141,10 +139,10 @@ public:
     o.m_slab_bytes = 0;
   }
 
-  UnorderedMap& operator=(UnorderedMap&& o) noexcept {
+  HashMap& operator=(HashMap&& o) noexcept {
     if (this == &o) return *this;
-    this->~UnorderedMap();
-    new (this) UnorderedMap(std::move(o));
+    this->~HashMap();
+    new (this) HashMap(std::move(o));
     return *this;
   }
 
@@ -309,11 +307,11 @@ public:
   // Iteration
   class iterator {
   public:
-    UnorderedMap* map;
+    HashMap* map;
     size_t bucket;
     Node* node;
 
-    iterator(UnorderedMap* m, size_t b, Node* n)
+    iterator(HashMap* m, size_t b, Node* n)
         : map(m),
           bucket(b),
           node(n) {}
