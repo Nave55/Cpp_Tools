@@ -1,11 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <cstdint>
 #include <cstdio>
-#include <cstring>
 #include <memory>
-#include <new>
 #include <type_traits>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
