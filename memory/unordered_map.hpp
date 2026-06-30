@@ -31,7 +31,7 @@ class HashMap {
   using Node = HashNode<K, V>;
 
 public:
-  class iterator;
+  class Iterator;
 
 private:
   MemAllocator* m_alloc;
@@ -304,13 +304,13 @@ public:
   }
 
   // Iteration
-  class iterator {
+  class Iterator {
   public:
     HashMap* map;
     size_t bucket;
     Node* node;
 
-    iterator(HashMap* m, size_t b, Node* n)
+    Iterator(HashMap* m, size_t b, Node* n)
         : map(m),
           bucket(b),
           node(n) {}
@@ -323,7 +323,7 @@ public:
       return node;
     }
 
-    iterator& operator++() {
+    Iterator& operator++() {
       if (node) node = node->next;
       while (!node && ++bucket < map->m_cap) {
         node = map->m_buckets[bucket];
@@ -331,23 +331,23 @@ public:
       return *this;
     }
 
-    bool operator==(const iterator& other) const {
+    bool operator==(const Iterator& other) const {
       return node == other.node && bucket == other.bucket;
     }
 
-    bool operator!=(const iterator& other) const {
+    bool operator!=(const Iterator& other) const {
       return !(*this == other);
     }
   };
 
-  iterator begin() {
+  Iterator begin() {
     for (size_t i = 0; i < m_cap; ++i)
-      if (m_buckets[i]) return iterator(this, i, m_buckets[i]);
+      if (m_buckets[i]) return Iterator(this, i, m_buckets[i]);
     return end();
   }
 
-  iterator end() {
-    return iterator(this, m_cap, nullptr);
+  Iterator end() {
+    return Iterator(this, m_cap, nullptr);
   }
 
 private:
