@@ -535,7 +535,6 @@ private:
   size_t m_buf_len = 0;
   size_t m_chunk_size = 0;
   PoolFreeNode* m_head = nullptr;
-  bool m_temp_mode = false;
 
 public:
   explicit Pool(size_t buf_size = MB, size_t chunk_size = 64,
@@ -575,7 +574,7 @@ public:
   }
 
   void free(void* ptr) noexcept override {
-    if (!ptr || m_temp_mode) return;
+    if (!ptr) return;
 
     auto* node = static_cast<PoolFreeNode*>(ptr);
     node->next = m_head;
@@ -635,7 +634,6 @@ private:
 public:
   explicit TempPool(Pool& p)
       : m_pool(p) {
-    m_pool.m_temp_mode = true;
     m_marker = m_pool.m_head;
   }
 
@@ -644,7 +642,6 @@ public:
     std::printf("Temp Pool Destroyed\n");
 #endif
 
-    m_pool.m_temp_mode = false;
     m_pool.m_head = m_marker;
   }
 };
