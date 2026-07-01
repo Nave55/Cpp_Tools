@@ -1,3 +1,5 @@
+#pragma once
+
 #include <atomic>
 #include <cstdio>
 
@@ -8,7 +10,7 @@ public:
 
 public:
   UniquePtr()
-      : ptr(nullptr) {}
+    : ptr(new T()) {}
 
   explicit UniquePtr(T* raw)
       : ptr{raw} {}
@@ -91,17 +93,19 @@ public:
   SharedPtr(const SharedPtr& other) noexcept
       : ptr(other.ptr),
         m_cb(other.m_cb) {
-    m_cb->strong.fetch_add(1);
+      if (m_cb)
+          m_cb->strong.fetch_add(1);
   }
 
   SharedPtr& operator=(const SharedPtr& other) noexcept {
-    if (this != &other) {
-      m_release();
-      ptr = other.ptr;
-      m_cb = other.m_cb;
-      m_cb->strong.fetch_add(1);
-    }
-    return *this;
+      if (this != &other) {
+          m_release();
+          ptr = other.ptr;
+          m_cb = other.m_cb;
+          if (m_cb)
+              m_cb->strong.fetch_add(1);
+      }
+      return *this;
   }
 
   SharedPtr(SharedPtr&& other) noexcept
@@ -126,16 +130,17 @@ public:
     m_release();
   }
 
-  uint32_t getWeakCount() {
-    return m_cb->weak;
+  uint32_t getWeakCount() const {
+      return m_cb ? m_cb->weak.load() : 0;
   }
 
-  uint32_t getStrongCount() {
-    return m_cb->strong;
+  uint32_t getStrongCount() const {
+      return m_cb ? m_cb->strong.load() : 0;
   }
 
-  T& operator*() const noexcept {
-    return *ptr;
+  T& operator*() const {
+      assert(ptr != nullptr);
+      return *ptr;
   }
 
   T* operator->() const noexcept {
