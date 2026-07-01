@@ -82,9 +82,9 @@ public:
 // *******************************************************
 
 class Arena final : public MemAllocator {
-private:
   friend class TempArena;
 
+private:
   unsigned char* m_buf = nullptr;
   size_t m_buf_len = 0;
   size_t m_prev_off = 0;
@@ -281,8 +281,9 @@ struct StackHeader {
 };
 
 class Stack final : public MemAllocator {
-private:
   friend class TempStack;
+
+private:
   unsigned char* m_buf = nullptr;
   size_t m_buf_len = 0;
   size_t m_curr_off = 0;
@@ -527,14 +528,13 @@ struct PoolFreeNode {
 };
 
 class Pool final : public MemAllocator {
-private:
   friend class TempPool;
+
+private:
   unsigned char* m_buf = nullptr;
   size_t m_buf_len = 0;
   size_t m_chunk_size = 0;
   PoolFreeNode* m_head = nullptr;
-
-  // TEMP MODE
   bool m_temp_mode = false;
 
 public:
@@ -562,7 +562,6 @@ public:
     ::operator delete[](m_buf, std::align_val_t{alignof(std::max_align_t)});
   }
 
-  // ALLOCATE
   void* allocate(size_t = 0, size_t = 0) noexcept override {
     if (!m_head) return nullptr;
     PoolFreeNode* node = m_head;
@@ -575,7 +574,6 @@ public:
     return static_cast<T*>(allocate());
   }
 
-  // FREE
   void free(void* ptr) noexcept override {
     if (!ptr || m_temp_mode) return;
 
@@ -584,7 +582,6 @@ public:
     m_head = node;
   }
 
-  // RESET POOL
   void freeAll() noexcept override {
     m_head = nullptr;
     size_t count = m_buf_len / m_chunk_size;
@@ -647,7 +644,6 @@ public:
     std::printf("Temp Pool Destroyed\n");
 #endif
 
-    // END TEMP
     m_pool.m_temp_mode = false;
     m_pool.m_head = m_marker;
   }
