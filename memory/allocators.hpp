@@ -32,9 +32,9 @@ constexpr uintptr_t alignForwardUintptr(const uintptr_t p,
 }
 
 inline void* align_forward(void* p, size_t alignment) noexcept {
-    uintptr_t addr = reinterpret_cast<uintptr_t>(p);
-    uintptr_t aligned = (addr + alignment - 1) & ~(alignment - 1);
-    return reinterpret_cast<void*>(aligned);
+  uintptr_t addr = reinterpret_cast<uintptr_t>(p);
+  uintptr_t aligned = (addr + alignment - 1) & ~(alignment - 1);
+  return reinterpret_cast<void*>(aligned);
 }
 
 inline size_t min(size_t a, size_t b) {
@@ -100,7 +100,7 @@ public:
   ~Arena() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-// std::printf("Arena destroyed\n");
+    // std::printf("Arena destroyed\n");
 #endif
   }
 
@@ -147,23 +147,23 @@ public:
   //   return p;
   // }
 
-void* allocate(size_t size, size_t alignment) noexcept override {
+  void* allocate(size_t size, size_t alignment) noexcept override {
     if (size == 0) panic("Size must be greater than zero");
     if (alignment > 128) alignment = 128;
 
     unsigned char* raw = m_buf + m_curr_off;
-    unsigned char* aligned = static_cast<unsigned char*>(align_forward(raw, alignment));
+    unsigned char* aligned =
+        static_cast<unsigned char*>(align_forward(raw, alignment));
 
     size_t new_off = aligned - m_buf;
-    if (new_off + size > m_buf_len)
-        panic("Arena can't allocate. Not aligned.");
+    if (new_off + size > m_buf_len) panic("Arena can't allocate. Not aligned.");
 
     m_prev_off = new_off;
     m_curr_off = new_off + size;
 
     std::memset(aligned, 0, size);
     return aligned;
-}
+  }
 
   void* resize(void* old_ptr, size_t old_size, size_t new_size,
                size_t alignment) noexcept override {
@@ -261,7 +261,7 @@ public:
     arena.m_prev_off = m_prev_off;
     arena.m_curr_off = m_curr_off;
 #if DEBUG
-    // std::printf("Temp Arena Destroyed\n");
+    std::printf("Temp Arena Destroyed\n");
 #endif
   }
 
@@ -510,7 +510,7 @@ public:
   ~TempStack() {
     m_stack.m_curr_off = m_curr_offset;
 #ifdef DEBUG
-    // std::printf("Temp Stack Destroyed\n");
+    std::printf("Temp Stack Destroyed\n");
 #endif
   }
 
@@ -523,8 +523,7 @@ public:
 // ********************************************
 
 struct PoolFreeNode {
-  PoolFreeNode* next;       // pool free list
-  PoolFreeNode* temp_next;  // temp scope tracking
+  PoolFreeNode* next;
 };
 
 class Pool final : public MemAllocator {
@@ -535,6 +534,9 @@ private:
   size_t m_chunk_size = 0;
   PoolFreeNode* m_head = nullptr;
 
+  // TEMP MODE
+  bool m_temp_mode = false;
+
 public:
   explicit Pool(size_t buf_size = MB, size_t chunk_size = 64,
                 size_t chunk_alignment = alignof(std::max_align_t)) {
@@ -543,29 +545,24 @@ public:
     if (!isPowerOfTwo(chunk_alignment))
       panic("chunk_alignment must be power of two");
 
-    // Allocate the buffer internally (like Arena)
     m_buf_len = buf_size;
     m_buf = static_cast<unsigned char*>(
         ::operator new[](m_buf_len, std::align_val_t{chunk_alignment}));
 
-    // Align chunk size
     m_chunk_size =
         (chunk_size + (chunk_alignment - 1)) & ~(chunk_alignment - 1);
 
     if (m_chunk_size < sizeof(PoolFreeNode))
       panic("chunk_size too small for free list node");
 
-    // Build free list
     freeAll();
   }
 
   ~Pool() {
     ::operator delete[](m_buf, std::align_val_t{alignof(std::max_align_t)});
-#ifdef DEBUG
-    // std::printf("Pool Destroyed\n");
-#endif
   }
 
+  // ALLOCATE
   void* allocate(size_t = 0, size_t = 0) noexcept override {
     if (!m_head) return nullptr;
     PoolFreeNode* node = m_head;
@@ -578,13 +575,16 @@ public:
     return static_cast<T*>(allocate());
   }
 
+  // FREE
   void free(void* ptr) noexcept override {
-    if (!ptr) return;
+    if (!ptr || m_temp_mode) return;
+
     auto* node = static_cast<PoolFreeNode*>(ptr);
     node->next = m_head;
     m_head = node;
   }
 
+  // RESET POOL
   void freeAll() noexcept override {
     m_head = nullptr;
     size_t count = m_buf_len / m_chunk_size;
@@ -595,7 +595,6 @@ public:
     }
   }
 
-  // Pools do not support resize
   void* resize(void*, size_t, size_t, size_t) noexcept override {
     panic("Pool Can't resize");
   }
@@ -629,43 +628,28 @@ public:
   AllocType getType() const noexcept override {
     return AllocType::Pool;
   }
-
-  size_t countFreeNodes() const noexcept {
-    size_t n = 0;
-    for (PoolFreeNode* p = m_head; p; p = p->next) n++;
-    return n;
-  }
 };
 
 class TempPool {
 private:
   Pool& m_pool;
-  PoolFreeNode* m_temp_head = nullptr;
+  PoolFreeNode* m_marker = nullptr;
 
 public:
   explicit TempPool(Pool& p)
-      : m_pool(p) {}
-
-  template <typename T>
-  T* alloc() {
-    void* ptr = m_pool.allocate(sizeof(T), alignof(T));
-    auto* node = static_cast<PoolFreeNode*>(ptr);
-
-    node->temp_next = m_temp_head;
-    m_temp_head = node;
-
-    return static_cast<T*>(ptr);
+      : m_pool(p) {
+    m_pool.m_temp_mode = true;
+    m_marker = m_pool.m_head;
   }
 
   ~TempPool() {
 #ifdef DEBUG
-    // std::printf("Temp Pool Destroyed\n");
+    std::printf("Temp Pool Destroyed\n");
 #endif
-    while (m_temp_head) {
-      PoolFreeNode* n = m_temp_head;
-      m_temp_head = m_temp_head->temp_next;
-      m_pool.free(n);
-    }
+
+    // END TEMP
+    m_pool.m_temp_mode = false;
+    m_pool.m_head = m_marker;
   }
 };
 
