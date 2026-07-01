@@ -28,7 +28,7 @@ public:
   explicit Vec(size_t sz, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
         m_len{sz},
-        m_cap{sz}, 
+        m_cap{sz},
         ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))} {
     if (sizeof(T) * sz > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
@@ -39,7 +39,7 @@ public:
   explicit Vec(size_t sz, size_t cap, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
         m_len{sz},
-        m_cap{cap}, 
+        m_cap{cap},
         ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))} {
     if (sizeof(T) * cap > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
@@ -50,7 +50,7 @@ public:
   explicit Vec(std::initializer_list<T> lst, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
         m_len{lst.size()},
-        m_cap{lst.size()}, 
+        m_cap{lst.size()},
         ptr{static_cast<T*>(
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))} {
     if (sizeof(T) * lst.size() > m_alloc->getChunkSize())
@@ -98,15 +98,13 @@ public:
     if (this == &other) return *this;
 
     if (m_alloc->getType() == AllocType::Pool) {
-      if (ptr) {
-        m_alloc->free(ptr);
-      }
+      if (ptr) m_alloc->free(ptr);
     }
 
     m_alloc = other.m_alloc;
 
-    ptr = static_cast<T*>(
-        m_alloc->allocate(sizeof(T) * other.m_cap, alignof(T)));
+    ptr =
+        static_cast<T*>(m_alloc->allocate(sizeof(T) * other.m_cap, alignof(T)));
     if (!ptr) panic("Vec copy assignment: allocation failed");
 
     m_len = other.m_len;
@@ -368,8 +366,7 @@ private:
           static_cast<T*>(m_alloc->allocate(sizeof(T) * new_cap, alignof(T)));
       if (!new_vec) panic("Allocator resize failed");
 
-      for (size_t i = 0; i < m_len; ++i)
-        new (&new_vec[i]) T(std::move(ptr[i]));
+      for (size_t i = 0; i < m_len; ++i) new (&new_vec[i]) T(std::move(ptr[i]));
 
       for (size_t i = 0; i < m_len; ++i) ptr[i].~T();
 
