@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <initializer_list>
+#include <typeinfo>
 #include "allocators.hpp"
 
 template <typename T>
