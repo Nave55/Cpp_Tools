@@ -2,8 +2,8 @@
 
 #include <cassert>
 #include <cstdio>
-#include <memory>
-#include <type_traits>
+#include <cstring>
+#include <new>
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
 constexpr size_t BYTE = 1ULL;
@@ -29,6 +29,16 @@ constexpr uintptr_t alignForwardUintptr(const uintptr_t p,
                                         const uintptr_t alignment) {
   uintptr_t mask = alignment - 1;
   return (p + mask) & ~mask;
+}
+
+inline void* align_forward(void* p, size_t alignment) noexcept {
+    uintptr_t addr = reinterpret_cast<uintptr_t>(p);
+    uintptr_t aligned = (addr + alignment - 1) & ~(alignment - 1);
+    return reinterpret_cast<void*>(aligned);
+}
+
+inline size_t min(size_t a, size_t b) {
+  return a < b ? a : b;
 }
 
 enum class AllocType {
@@ -120,22 +130,40 @@ public:
     return *this;
   }
 
-  void* allocate(size_t size, size_t alignment) noexcept override {
-    if (size <= 0) panic("Size must be greater than zero");
+  // void* allocate(size_t size, size_t alignment) noexcept override {
+  //   if (size <= 0) panic("Size must be greater than zero");
+  //   if (alignment > 128) alignment = 128;
+
+  //   void* p = m_buf + m_curr_off;
+  //   size_t space = m_buf_len - m_curr_off;
+
+  //   if (!std::align(alignment, size, p, space))
+  //     panic("Arena can't allocate. Not aligned.");
+
+  //   m_prev_off = static_cast<unsigned char*>(p) - m_buf;
+  //   m_curr_off = m_prev_off + size;
+
+  //   std::memset(p, 0, size);
+  //   return p;
+  // }
+
+void* allocate(size_t size, size_t alignment) noexcept override {
+    if (size == 0) panic("Size must be greater than zero");
     if (alignment > 128) alignment = 128;
 
-    void* p = m_buf + m_curr_off;
-    size_t space = m_buf_len - m_curr_off;
+    unsigned char* raw = m_buf + m_curr_off;
+    unsigned char* aligned = static_cast<unsigned char*>(align_forward(raw, alignment));
 
-    if (!std::align(alignment, size, p, space))
-      panic("Arena can't allocate. Not aligned.");
+    size_t new_off = aligned - m_buf;
+    if (new_off + size > m_buf_len)
+        panic("Arena can't allocate. Not aligned.");
 
-    m_prev_off = static_cast<unsigned char*>(p) - m_buf;
-    m_curr_off = m_prev_off + size;
+    m_prev_off = new_off;
+    m_curr_off = new_off + size;
 
-    std::memset(p, 0, size);
-    return p;
-  }
+    std::memset(aligned, 0, size);
+    return aligned;
+}
 
   void* resize(void* old_ptr, size_t old_size, size_t new_size,
                size_t alignment) noexcept override {
@@ -161,7 +189,7 @@ public:
     void* newp = allocate(new_size, alignment);
     if (!newp) panic("New Pointer wasn't allocated in arena");
 
-    std::memmove(newp, old_ptr, std::min(old_size, new_size));
+    std::memmove(newp, old_ptr, min(old_size, new_size));
     return newp;
   }
 
@@ -314,7 +342,7 @@ public:
 
   template <typename T>
   T* alloc(size_t count = 1, size_t alignment = alignof(T)) noexcept {
-    static_assert(!std::is_abstract<T>::value, "alloc of abstract type");
+    // static_assert(!std::is_abstract<T>::value, "alloc of abstract type");
 
     if (count > SIZE_MAX / sizeof(T)) return nullptr;
 
@@ -368,7 +396,7 @@ public:
     void* new_ptr = allocate(new_size, alignment);
     if (!new_ptr) return nullptr;
 
-    size_t copy_size = std::min(header->alloc_size, new_size);
+    size_t copy_size = min(header->alloc_size, new_size);
     std::memmove(new_ptr, old_ptr, copy_size);
 
     return new_ptr;
