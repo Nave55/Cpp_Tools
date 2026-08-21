@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdio>
 #include "allocators.hpp"
 #include "vec.hpp"
 
@@ -32,37 +33,39 @@ class HashMap {
 
 public:
   class Iterator;
-  size_t len;
-  size_t cap;
+  size_t len;         // amount of entries in hashmap
+  size_t cap;         // total node capacity
+  size_t bucket_amt;  // number of buckets
+  size_t slab_size;   // nodes per slab
+  size_t slab_bytes;  // bytes per slab
 
 private:
   MemAllocator* m_alloc;
   Node** m_buckets;
   Hash m_hash;
   KeyEq m_eq;
-  bool m_can_free;  // only Pool frees
-
-  Vec<void*> m_slabs;   // raw slab pointers
-  Node* m_free;         // free list head
-  size_t m_slab_size;   // nodes per slab
-  size_t m_slab_bytes;  // bytes per slab
+  bool m_can_free;
+  Vec<void*> m_slabs;  // raw slab pointers
+  Node* m_free;        // free list head
 
 public:
-  explicit HashMap(MemAllocator& alloc = arena_alloc, size_t cap = 0)
+  explicit HashMap(MemAllocator& alloc = arena_alloc, size_t slab_size = 32,
+                   size_t bucket_amt = 0)
       : len(0),
-        cap(cap == 0 ? 64 : m_nextPow2(cap)),
+        cap(0),
+        bucket_amt(bucket_amt == 0 ? 64 : m_nextPow2(bucket_amt)),
+        slab_size(slab_size),
+        slab_bytes(0),
         m_alloc(&alloc),
         m_buckets(static_cast<Node**>(
-            alloc.allocate(sizeof(Node*) * this->cap, alignof(Node*)))),
+            alloc.allocate(sizeof(Node*) * this->bucket_amt, alignof(Node*)))),
         m_hash(Hash{}),
         m_eq(KeyEq{}),
         m_can_free(alloc.getType() == AllocType::Pool),
         m_slabs(0, 4, alloc),
-        m_free(nullptr),
-        m_slab_size(0),
-        m_slab_bytes(0) {
+        m_free(nullptr) {
     if (!m_buckets) panic("UnorderedMap: bucket allocation failed");
-    for (size_t i = 0; i < this->cap; ++i) m_buckets[i] = nullptr;
+    for (size_t i = 0; i < this->bucket_amt; ++i) m_buckets[i] = nullptr;
 
     static_assert(sizeof(Node) % alignof(Node) == 0,
                   "UnorderedMap: Node size must be multiple of alignment");
@@ -86,23 +89,23 @@ public:
   HashMap(HashMap&& o) noexcept
       : m_alloc(o.m_alloc),
         len(o.len),
-        cap(o.cap),
+        bucket_amt(o.bucket_amt),
         m_buckets(o.m_buckets),
         m_hash(std::move(o.m_hash)),
         m_eq(std::move(o.m_eq)),
         m_can_free(o.m_can_free),
         m_slabs(std::move(o.m_slabs)),
         m_free(o.m_free),
-        m_slab_size(o.m_slab_size),
-        m_slab_bytes(o.m_slab_bytes) {
+        slab_size(o.slab_size),
+        slab_bytes(o.slab_bytes) {
     o.m_alloc = nullptr;
     o.m_buckets = nullptr;
     o.len = 0;
-    o.cap = 0;
+    o.bucket_amt = 0;
     o.m_can_free = false;
     o.m_free = nullptr;
-    o.m_slab_size = 0;
-    o.m_slab_bytes = 0;
+    o.slab_size = 0;
+    o.slab_bytes = 0;
   }
 
   HashMap& operator=(HashMap&& o) noexcept {
@@ -113,11 +116,11 @@ public:
   }
 
   V& operator[](const K& key) {
-    if (len * 4 > cap * 3) rehash(cap * 2);
+    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
 
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
-    const size_t i = h & (cap - 1);
+    const size_t i = h & (bucket_amt - 1);
 
     Node* n = m_buckets[i];
     while (n) {
@@ -132,12 +135,16 @@ public:
     return newNode->value;
   }
 
+  size_t remaining_capacity() const {
+    return cap - len;
+  }
+
   void insert(const K& key, const V& value) {
-    if (len * 4 > cap * 3) rehash(cap * 2);
+    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
 
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
-    const size_t i = h & (cap - 1);
+    const size_t i = h & (bucket_amt - 1);
 
     Node* n = m_buckets[i];
     while (n) {
@@ -157,7 +164,7 @@ public:
   bool erase(const K& key) {
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
-    const size_t i = h & (cap - 1);
+    const size_t i = h & (bucket_amt - 1);
 
     Node* prev = nullptr;
     Node* curr = m_buckets[i];
@@ -183,7 +190,7 @@ public:
   V* find(const K& key) {
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
-    const size_t i = h & (cap - 1);
+    const size_t i = h & (bucket_amt - 1);
 
     Node* n = m_buckets[i];
     while (n) {
@@ -196,7 +203,7 @@ public:
   const V* find(const K& key) const {
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
-    const size_t i = h & (cap - 1);
+    const size_t i = h & (bucket_amt - 1);
 
     Node* n = m_buckets[i];
     while (n) {
@@ -223,7 +230,7 @@ public:
   }
 
   void clear() {
-    for (size_t i = 0; i < cap; ++i) {
+    for (size_t i = 0; i < bucket_amt; ++i) {
       Node* n = m_buckets[i];
       m_buckets[i] = nullptr;
       while (n) {
@@ -238,7 +245,7 @@ public:
 
   void rehash(size_t new_cap) {
     new_cap = m_nextPow2(new_cap);
-    const size_t old_cap = cap;
+    const size_t old_cap = bucket_amt;
 
     Node** new_buckets = static_cast<Node**>(
         m_alloc->allocate(sizeof(Node*) * new_cap, alignof(Node*)));
@@ -259,7 +266,7 @@ public:
 
     if (m_can_free) m_alloc->free(m_buckets);
     m_buckets = new_buckets;
-    cap = new_cap;
+    bucket_amt = new_cap;
   }
 
   class Iterator {
@@ -283,7 +290,7 @@ public:
 
     Iterator& operator++() {
       if (node) node = node->next;
-      while (!node && ++bucket < map->cap) {
+      while (!node && ++bucket < map->bucket_amt) {
         node = map->m_buckets[bucket];
       }
       return *this;
@@ -299,13 +306,13 @@ public:
   };
 
   Iterator begin() {
-    for (size_t i = 0; i < cap; ++i)
+    for (size_t i = 0; i < bucket_amt; ++i)
       if (m_buckets[i]) return Iterator(this, i, m_buckets[i]);
     return end();
   }
 
   Iterator end() {
-    return Iterator(this, cap, nullptr);
+    return Iterator(this, bucket_amt, nullptr);
   }
 
 private:
@@ -349,23 +356,34 @@ private:
 
     size_t nodes;
     if (len < 128)
-      nodes = 64;
+      nodes = slab_size;
     else
       nodes = len / 4;
 
-    nodes = std::max(nodes, size_t(64));
+    nodes = std::max(nodes, slab_size);
     nodes = std::min(nodes, size_t(4096));
 
-    m_slab_size = nodes;
-    m_slab_bytes = nodes * node_size;
+    // If backing allocator is Pool, cap by chunk capacity
+    if (m_alloc->getType() == AllocType::Pool) {
+      const size_t chunk = m_alloc->getChunkSize();
+      const size_t max_nodes = chunk / node_size;
+      if (max_nodes == 0)
+        panic("UnorderedMap::allocate_slab: Pool chunk too small for Node");
 
-    void* raw = m_alloc->allocate(m_slab_bytes, alignof(Node));
+      nodes = std::min(nodes, max_nodes);
+    }
+
+    slab_size = nodes;
+    slab_bytes = nodes * node_size;
+
+    void* raw = m_alloc->allocate(slab_bytes, alignof(Node));
     if (!raw) panic("UnorderedMap::allocate_slab: allocator failed");
 
     m_slabs.pushBack(raw);
+    cap += nodes;
 
     Node* base = static_cast<Node*>(raw);
-    for (size_t i = 0; i < m_slab_size; ++i) {
+    for (size_t i = 0; i < slab_size; ++i) {
       base[i].next = m_free;
       m_free = &base[i];
     }
