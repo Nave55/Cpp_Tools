@@ -100,7 +100,7 @@ public:
   ~Arena() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-    // std::printf("Arena destroyed\n");
+    std::printf("Arena destroyed\n");
 #endif
   }
 
@@ -129,23 +129,6 @@ public:
     }
     return *this;
   }
-
-  // void* allocate(size_t size, size_t alignment) noexcept override {
-  //   if (size <= 0) panic("Size must be greater than zero");
-  //   if (alignment > 128) alignment = 128;
-
-  //   void* p = m_buf + m_curr_off;
-  //   size_t space = m_buf_len - m_curr_off;
-
-  //   if (!std::align(alignment, size, p, space))
-  //     panic("Arena can't allocate. Not aligned.");
-
-  //   m_prev_off = static_cast<unsigned char*>(p) - m_buf;
-  //   m_curr_off = m_prev_off + size;
-
-  //   std::memset(p, 0, size);
-  //   return p;
-  // }
 
   void* allocate(size_t size, size_t alignment) noexcept override {
     if (size == 0) panic("Size must be greater than zero");
@@ -298,7 +281,7 @@ public:
   ~Stack() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
 #ifdef DEBUG
-    // std::printf("Stack destroyed\n");
+    std::printf("Stack destroyed\n");
 #endif
   }
 
@@ -343,8 +326,6 @@ public:
 
   template <typename T>
   T* alloc(size_t count = 1, size_t alignment = alignof(T)) noexcept {
-    // static_assert(!std::is_abstract<T>::value, "alloc of abstract type");
-
     if (count > SIZE_MAX / sizeof(T)) return nullptr;
 
     void* p = allocate(sizeof(T) * count, alignment);
@@ -424,7 +405,6 @@ public:
     const uintptr_t expected_addr = base + block_start;
     if (expected_addr != addr) {
       panic("Header mismatch");
-      // return;
     }
 
     // LIFO check
@@ -446,7 +426,6 @@ public:
   void freeToMarker(size_t marker) noexcept {
     if (marker > m_curr_off) {
       panic("Invalid marker");
-      // return;
     }
     m_curr_off = marker;
   }
