@@ -33,37 +33,31 @@ class HashMap {
 
 public:
   class Iterator;
-  size_t len;         // amount of entries in hashmap
-  size_t cap;         // total node capacity
-  size_t bucket_amt;  // number of buckets
-  size_t slab_size;   // nodes per slab
-  size_t slab_bytes;  // bytes per slab
+  size_t len = 0;         // amount of entries in hashmap
+  size_t cap = 0;         // total node capacity
+  size_t slab_bytes = 0;  // bytes per slab
+  size_t slab_size;       // nodes per slab
+  size_t bucket_amt;      // number of buckets
 
 private:
-  MemAllocator* m_alloc;
+  Hash m_hash = Hash{};
+  KeyEq m_eq = KeyEq{};
+  Node* m_free = nullptr;  // free list head
+  MemAllocator* m_alloc;   // custom allocator
   Node** m_buckets;
-  Hash m_hash;
-  KeyEq m_eq;
-  bool m_can_free;
+  bool m_can_free;     // if allocator support freeing data
   Vec<void*> m_slabs;  // raw slab pointers
-  Node* m_free;        // free list head
 
 public:
   explicit HashMap(MemAllocator& alloc = arena_alloc, size_t slab_size = 32,
-                   size_t bucket_amt = 0)
-      : len(0),
-        cap(0),
-        bucket_amt(bucket_amt == 0 ? 64 : m_nextPow2(bucket_amt)),
-        slab_size(slab_size),
-        slab_bytes(0),
+                   size_t slabs = 4, size_t bucket_amt = 64)
+      : slab_size(slab_size),
+        bucket_amt(m_nextPow2(bucket_amt)),
         m_alloc(&alloc),
         m_buckets(static_cast<Node**>(
             alloc.allocate(sizeof(Node*) * this->bucket_amt, alignof(Node*)))),
-        m_hash(Hash{}),
-        m_eq(KeyEq{}),
         m_can_free(alloc.getType() == AllocType::Pool),
-        m_slabs(0, 4, alloc),
-        m_free(nullptr) {
+        m_slabs(0, slabs, alloc) {
     if (!m_buckets) panic("UnorderedMap: bucket allocation failed");
     for (size_t i = 0; i < this->bucket_amt; ++i) m_buckets[i] = nullptr;
 
