@@ -73,7 +73,7 @@ public:
 
     if (m_can_free) {
       m_alloc->free(m_buckets);
-      for (size_t i = 0; i < m_slabs.size(); ++i) {
+      for (size_t i = 0; i < m_slabs.len; ++i) {
         void* raw = m_slabs[i];
         if (raw) m_alloc->free(raw);
       }
@@ -348,11 +348,10 @@ private:
     const size_t node_size = sizeof(Node);
 
     size_t nodes;
-    if (len < 128) {
+    if (len < 128)
       nodes = 64;
-    } else {
+    else
       nodes = len / 4;
-    }
 
     nodes = std::max(nodes, size_t(64));
     nodes = std::min(nodes, size_t(4096));
