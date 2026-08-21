@@ -8,17 +8,17 @@ template <typename T>
 class Vec {
 private:
   MemAllocator* m_alloc;
-  size_t m_len = 0;
-  size_t m_cap = 0;
 
 public:
+  size_t len = 0;
+  size_t cap = 0;
   T* ptr = nullptr;
 
 public:
   explicit Vec(MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        m_len{0},
-        m_cap{8},
+        len{0},
+        cap{8},
         ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * 8, alignof(T)))} {
     if (sizeof(T) * 10 > m_alloc->getChunkSize()) {
       panic("Initial Vec capacity does not fit in a pool chunk");
@@ -27,8 +27,8 @@ public:
 
   explicit Vec(size_t sz, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        m_len{sz},
-        m_cap{sz},
+        len{sz},
+        cap{sz},
         ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))} {
     if (sizeof(T) * sz > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
@@ -38,8 +38,8 @@ public:
 
   explicit Vec(size_t sz, size_t cap, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        m_len{sz},
-        m_cap{cap},
+        len{sz},
+        cap{cap},
         ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))} {
     if (sizeof(T) * cap > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
@@ -49,8 +49,8 @@ public:
 
   explicit Vec(std::initializer_list<T> lst, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        m_len{lst.size()},
-        m_cap{lst.size()},
+        len{lst.size()},
+        cap{lst.size()},
         ptr{static_cast<T*>(
             m_alloc->allocate(sizeof(T) * lst.size(), alignof(T)))} {
     if (sizeof(T) * lst.size() > m_alloc->getChunkSize())
@@ -62,8 +62,8 @@ public:
   explicit Vec(std::initializer_list<T> lst, size_t cap,
                MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        m_len{lst.size()},
-        m_cap{std::max(cap, lst.size())},
+        len{lst.size()},
+        cap{std::max(cap, lst.size())},
         ptr{static_cast<T*>(m_alloc->allocate(
             sizeof(T) * std::max(cap, lst.size()), alignof(T)))} {
     if (sizeof(T) * std::max(cap, lst.size()) > m_alloc->getChunkSize())
@@ -78,20 +78,20 @@ public:
 
   Vec(const Vec& vec)
       : m_alloc{vec.m_alloc},
-        ptr{m_alloc->allocate(sizeof(T) * vec.m_cap, alignof(T))},
-        m_len{vec.m_len},
-        m_cap{vec.m_cap} {
-    std::copy(vec.ptr, vec.ptr + vec.m_len, ptr);
+        ptr{m_alloc->allocate(sizeof(T) * vec.cap, alignof(T))},
+        len{vec.len},
+        cap{vec.cap} {
+    std::copy(vec.ptr, vec.ptr + vec.len, ptr);
   }
 
   Vec(Vec&& vec)
       : m_alloc{vec.m_alloc},
         ptr{std::move(vec.ptr)},
-        m_len{vec.m_len},
-        m_cap{vec.m_cap} {
+        len{vec.len},
+        cap{vec.cap} {
     vec.ptr = nullptr;
-    vec.m_len = 0;
-    vec.m_cap = 0;
+    vec.len = 0;
+    vec.cap = 0;
   }
 
   Vec& operator=(const Vec& other) {
@@ -103,14 +103,13 @@ public:
 
     m_alloc = other.m_alloc;
 
-    ptr =
-        static_cast<T*>(m_alloc->allocate(sizeof(T) * other.m_cap, alignof(T)));
+    ptr = static_cast<T*>(m_alloc->allocate(sizeof(T) * other.cap, alignof(T)));
     if (!ptr) panic("Vec copy assignment: allocation failed");
 
-    m_len = other.m_len;
-    m_cap = other.m_cap;
+    len = other.len;
+    cap = other.cap;
 
-    std::copy(other.ptr, other.ptr + other.m_len, ptr);
+    std::copy(other.ptr, other.ptr + other.len, ptr);
 
     return *this;
   }
@@ -124,12 +123,12 @@ public:
 
     m_alloc = other.m_alloc;
     ptr = other.ptr;
-    m_len = other.m_len;
-    m_cap = other.m_cap;
+    len = other.len;
+    cap = other.cap;
 
     other.ptr = nullptr;
-    other.m_len = 0;
-    other.m_cap = 0;
+    other.len = 0;
+    other.cap = 0;
 
     return *this;
   }
@@ -139,21 +138,13 @@ public:
   // }
 
   T& operator[](size_t i) noexcept {
-    if (i >= m_len) panic("Vec::operator[] out of bounds");
+    if (i >= len) panic("Vec::operator[] out of bounds");
     return ptr[i];
   }
 
   const T& operator[](size_t i) const noexcept {
-    if (i >= m_len) panic("Vec::operator[] out of bounds");
+    if (i >= len) panic("Vec::operator[] out of bounds");
     return ptr[i];
-  }
-
-  size_t capacity() const noexcept {
-    return m_cap;
-  }
-
-  size_t size() const noexcept {
-    return m_len;
   }
 
   T* begin() const noexcept {
@@ -161,7 +152,7 @@ public:
   }
 
   T* end() const noexcept {
-    return ptr + m_len;
+    return ptr + len;
   }
 
   const char* type() const noexcept {
@@ -169,15 +160,15 @@ public:
   }
 
   void print() const noexcept {
-    if (m_len == 0) {
+    if (len == 0) {
       std::printf("[]\n");
       return;
     }
-    for (size_t i = 0; i < m_len; i++) {
+    for (size_t i = 0; i < len; i++) {
       if (i == 0) {
         std::printf("[");
         m_printValue(ptr[i]);
-      } else if (i < m_len - 1) {
+      } else if (i < len - 1) {
         std::printf(", ");
         m_printValue(ptr[i]);
       } else {
@@ -186,15 +177,15 @@ public:
         std::printf("]\n");
       }
 
-      if (m_len == 1) std::printf("]\n");
+      if (len == 1) std::printf("]\n");
     }
   }
 
   void printInfo() const noexcept {
     std::printf("length: ");
-    m_printValue(m_len);
+    m_printValue(len);
     std::printf(", capacity: ");
-    m_printValue(m_cap);
+    m_printValue(cap);
     std::printf(", type: ");
     m_printValue(type());
     std::printf("\n");
@@ -205,12 +196,12 @@ public:
   }
 
   T last() const noexcept {
-    return ptr[m_len - 1];
+    return ptr[len - 1];
   }
 
   void clear() noexcept {
-    for (size_t i = 0; i < m_len; i++) ptr[i] = T();
-    m_len = 0;
+    for (size_t i = 0; i < len; i++) ptr[i] = T();
+    len = 0;
   }
 
   void fill(const T& val) noexcept {
@@ -231,7 +222,7 @@ public:
   }
 
   int linearSearch(T x) const noexcept {
-    for (size_t i = 0; i < m_len; i++) {
+    for (size_t i = 0; i < len; i++) {
       if (ptr[i] == x) return i;
     }
 
@@ -239,7 +230,7 @@ public:
   }
 
   int binarySearch(T x) const noexcept {
-    int high = m_len - 1;
+    int high = len - 1;
     int low = 0;
 
     while (low <= high) {
@@ -256,102 +247,102 @@ public:
   }
 
   void extend(size_t new_size, T val = T()) noexcept {
-    if (new_size > m_cap) m_resizeCapacity(new_size);
-    for (size_t i = m_len; i < new_size; ++i) ptr[i] = val;
-    m_len = new_size;
+    if (new_size > cap) m_resizeCapacity(new_size);
+    for (size_t i = len; i < new_size; ++i) ptr[i] = val;
+    len = new_size;
   }
 
   void reserve(size_t new_cap) noexcept {
-    if (new_cap > m_cap) m_resizeCapacity(new_cap);
+    if (new_cap > cap) m_resizeCapacity(new_cap);
   }
 
   void shrink(size_t new_size) noexcept {
-    if (m_len < m_cap && m_len > 0) m_resizeCapacity(new_size);
+    if (len < cap && len > 0) m_resizeCapacity(new_size);
   }
 
   void shrinkToFit() noexcept {
-    if (m_len < m_cap) m_resizeCapacity(m_len);
+    if (len < cap) m_resizeCapacity(len);
   }
 
   template <typename S>
     requires std::is_same_v<std::remove_cvref_t<S>, T>
   void pushBack(S&& val) noexcept {
-    if (m_len == m_cap) m_resizeCapacity(m_cap * 2);
-    ptr[m_len++] = std::forward<S>(val);
+    if (len == cap) m_resizeCapacity(cap * 2);
+    ptr[len++] = std::forward<S>(val);
   }
 
   template <typename... Args>
     requires(sizeof...(Args) == 1 &&
              std::is_same_v<T, std::remove_cvref_t<Args>...>)
   void emplaceBack(Args&&... args) noexcept {
-    if (m_len == m_cap) m_resizeCapacity(m_cap * 2);
+    if (len == cap) m_resizeCapacity(cap * 2);
 
-    new (&ptr[m_len]) T(std::forward<Args>(args)...);
-    ++m_len;
+    new (&ptr[len]) T(std::forward<Args>(args)...);
+    ++len;
   }
 
   template <typename S>
     requires std::is_same_v<std::remove_cvref_t<S>, T>
   void insert(S&& val, size_t ind) noexcept {
-    if (ind > m_len) ind = m_len;
+    if (ind > len) ind = len;
 
-    if (m_len == m_cap) m_resizeCapacity(m_cap * 2);
+    if (len == cap) m_resizeCapacity(cap * 2);
 
-    for (size_t i = m_len; i > ind; --i) ptr[i] = ptr[i - 1];
+    for (size_t i = len; i > ind; --i) ptr[i] = ptr[i - 1];
 
     ptr[ind] = std::forward<S>(val);
-    ++m_len;
+    ++len;
   }
 
   void pop() noexcept {
-    if (m_len <= 0) panic("Vec must be > 0 to pop");
-    --m_len;
+    if (len <= 0) panic("Vec must be > 0 to pop");
+    --len;
   }
 
   T popBack() noexcept {
-    if (m_len <= 0) panic("Vec must be > 0 to pop");
-    T val = ptr[m_len - 1];
-    --m_len;
+    if (len <= 0) panic("Vec must be > 0 to pop");
+    T val = ptr[len - 1];
+    --len;
     return val;
   }
 
   void orderedRemove(size_t ind) noexcept {
-    if (ind >= m_len) return;
+    if (ind >= len) return;
 
-    for (size_t i = ind; i + 1 < m_len; ++i) ptr[i] = ptr[i + 1];
+    for (size_t i = ind; i + 1 < len; ++i) ptr[i] = ptr[i + 1];
 
-    --m_len;
+    --len;
   }
 
   void unorderedRemove(size_t ind) noexcept {
-    if (ind >= m_len) return;
+    if (ind >= len) return;
 
-    ptr[ind] = ptr[m_len - 1];
-    --m_len;
+    ptr[ind] = ptr[len - 1];
+    --len;
   }
 
   void deleteVal(T val) noexcept {
-    for (int i = m_len - 1; i >= 0; --i) {
+    for (int i = len - 1; i >= 0; --i) {
       if (ptr[i] == val) orderedRemove(i);
     }
   }
 
   void deleteValUnordered(T val) noexcept {
-    for (int i = m_len - 1; i >= 0; --i) {
+    for (int i = len - 1; i >= 0; --i) {
       if (ptr[i] == val) unorderedRemove(i);
     }
   }
 
   template <typename F>
   void mapIter(F func) {
-    for (size_t i = 0; i < m_len; ++i) {
+    for (size_t i = 0; i < len; ++i) {
       func(ptr[i]);
     }
   }
 
 private:
   void m_resizeCapacity(size_t new_cap) {
-    size_t old_bytes = m_cap * sizeof(T);
+    size_t old_bytes = cap * sizeof(T);
     size_t new_bytes = new_cap * sizeof(T);
 
     if (m_alloc->supportsResize()) {
@@ -360,19 +351,19 @@ private:
       if (!new_vec) panic("Allocator resize failed");
 
       ptr = new_vec;
-      m_cap = new_cap;
+      cap = new_cap;
     } else {
       T* new_vec =
           static_cast<T*>(m_alloc->allocate(sizeof(T) * new_cap, alignof(T)));
       if (!new_vec) panic("Allocator resize failed");
 
-      for (size_t i = 0; i < m_len; ++i) new (&new_vec[i]) T(std::move(ptr[i]));
+      for (size_t i = 0; i < len; ++i) new (&new_vec[i]) T(std::move(ptr[i]));
 
-      for (size_t i = 0; i < m_len; ++i) ptr[i].~T();
+      for (size_t i = 0; i < len; ++i) ptr[i].~T();
 
       m_alloc->free(ptr);
       ptr = new_vec;
-      m_cap = new_cap;
+      cap = new_cap;
     }
   }
 
