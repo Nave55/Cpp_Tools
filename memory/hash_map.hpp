@@ -48,9 +48,9 @@ private:
   size_t m_slab_bytes;  // bytes per slab
 
 public:
-  explicit HashMap(size_t cap = 16, MemAllocator& alloc = arena_alloc)
+  explicit HashMap(MemAllocator& alloc = arena_alloc, size_t cap = 0)
       : len(0),
-        cap(m_nextPow2(cap)),
+        cap(cap == 0 ? 64 : m_nextPow2(cap)),
         m_alloc(&alloc),
         m_buckets(static_cast<Node**>(
             alloc.allocate(sizeof(Node*) * this->cap, alignof(Node*)))),
