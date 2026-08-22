@@ -134,12 +134,20 @@ public:
     return *this;
   }
 
-  std::optional<T&> operator[](size_t i) noexcept {
-    if (i >= len) return std::nullopt;
+  T& operator[](size_t i) noexcept {
     return ptr[i];
   }
 
   const T& operator[](size_t i) const noexcept {
+    return ptr[i];
+  }
+
+  std::optional<T&> at(size_t i) noexcept {
+    if (i >= len) return std::nullopt;
+    return ptr[i];
+  }
+
+  std::optional<const T&> at(size_t i) const noexcept {
     if (i >= len) return std::nullopt;
     return ptr[i];
   }
