@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdio>
+#include <optional>
 #include "allocators.hpp"
 #include "vec.hpp"
 
@@ -71,8 +71,8 @@ public:
     if (m_can_free) {
       m_alloc->free(m_buckets);
       for (size_t i = 0; i < m_slabs.len; ++i) {
-        void* raw = m_slabs[i];
-        if (raw) m_alloc->free(raw);
+        auto val = m_slabs[i];
+        if (val.has_value()) m_alloc->free(static_cast<void*>(val.value()));
       }
     }
   }
@@ -207,15 +207,15 @@ public:
     return nullptr;
   }
 
-  V& at(const K& key) {
+  std::optional<V&> at(const K& key) {
     V* p = find(key);
-    if (!p) panic("UnorderedMap::at: key not found");
+    if (!p) return std::nullopt;
     return *p;
   }
 
-  const V& at(const K& key) const {
+  std::optional<const V&> at(const K& key) const {
     const V* p = find(key);
-    if (!p) panic("UnorderedMap::at: key not found");
+    if (!p) return std::nullopt;
     return *p;
   }
 
@@ -269,6 +269,7 @@ public:
     size_t bucket;
     Node* node;
 
+  public:
     Iterator(HashMap* m, size_t b, Node* n)
         : map(m),
           bucket(b),
