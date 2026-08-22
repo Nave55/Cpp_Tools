@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 #include <typeinfo>
 #include "allocators.hpp"
 
@@ -133,17 +134,13 @@ public:
     return *this;
   }
 
-  // T* data() {
-  //   return ptr;
-  // }
-
-  T& operator[](size_t i) noexcept {
-    if (i >= len) panic("Vec::operator[] out of bounds");
+  std::optional<T&> operator[](size_t i) noexcept {
+    if (i >= len) return std::nullopt;
     return ptr[i];
   }
 
   const T& operator[](size_t i) const noexcept {
-    if (i >= len) panic("Vec::operator[] out of bounds");
+    if (i >= len) return std::nullopt;
     return ptr[i];
   }
 
@@ -268,7 +265,7 @@ public:
     requires std::is_same_v<std::remove_cvref_t<S>, T>
   void pushBack(S&& val) noexcept {
     if (len == cap) m_resizeCapacity(cap * 2);
-    ptr[len++] = std::forward<S>(val);
+    ptr[++len] = std::forward<S>(val);
   }
 
   template <typename... Args>
@@ -295,12 +292,11 @@ public:
   }
 
   void pop() noexcept {
-    if (len <= 0) panic("Vec must be > 0 to pop");
-    --len;
+    if (len > 0) --len;
   }
 
-  T popBack() noexcept {
-    if (len <= 0) panic("Vec must be > 0 to pop");
+  std::optional<T> popBack() noexcept {
+    if (len <= 0) return std::nullopt;
     T val = ptr[len - 1];
     --len;
     return val;
