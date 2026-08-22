@@ -80,7 +80,7 @@ public:
     if (m_can_free) {
       m_alloc->free(m_buckets);
       for (size_t i = 0; i < m_slabs.len; ++i) {
-        auto val = m_slabs[i];
+        auto val = m_slabs.at(i);
         if (val.has_value()) m_alloc->free(static_cast<void*>(val.value()));
       }
     }
