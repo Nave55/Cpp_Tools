@@ -33,6 +33,7 @@ class HashMap {
 
 public:
   class Iterator;
+  class ConstIterator;
   size_t len = 0;         // amount of entries in hashmap
   size_t cap = 0;         // total node capacity
   size_t slab_bytes = 0;  // bytes per slab
@@ -63,6 +64,14 @@ public:
 
     static_assert(sizeof(Node) % alignof(Node) == 0,
                   "UnorderedMap: Node size must be multiple of alignment");
+  }
+
+  explicit HashMap(std::initializer_list<std::pair<K, V>> init,
+                   MemAllocator& alloc = arena_alloc, size_t slab_size = 32,
+                   size_t slabs = 4, size_t bucket_amt = 64)
+      : HashMap(alloc, slab_size, slabs, bucket_amt)  // delegate
+  {
+    for (auto& [k, v] : init) insert(k, v);
   }
 
   ~HashMap() {
@@ -109,24 +118,12 @@ public:
     return *this;
   }
 
-  V& operator[](const K& key) {
-    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
+  V* operator[](const K& key) {
+    return find(key);
+  }
 
-    const size_t raw = m_hash(key);
-    const size_t h = m_mixHash(raw);
-    const size_t i = h & (bucket_amt - 1);
-
-    Node* n = m_buckets[i];
-    while (n) {
-      if (n->hash == h && m_eq(n->key, key)) return n->value;
-      n = n->next;
-    }
-
-    Node* newNode = m_allocNode(h, key, V{});
-    newNode->next = m_buckets[i];
-    m_buckets[i] = newNode;
-    ++len;
-    return newNode->value;
+  const V* operator[](const K& key) const {
+    return find(key);
   }
 
   size_t remaining_capacity() const {
@@ -219,6 +216,26 @@ public:
     return *p;
   }
 
+  V& atOrInsert(const K& key) {
+    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
+
+    const size_t raw = m_hash(key);
+    const size_t h = m_mixHash(raw);
+    const size_t i = h & (bucket_amt - 1);
+
+    Node* n = m_buckets[i];
+    while (n) {
+      if (n->hash == h && m_eq(n->key, key)) return n->value;
+      n = n->next;
+    }
+
+    Node* newNode = m_allocNode(h, key, V{});
+    newNode->next = m_buckets[i];
+    m_buckets[i] = newNode;
+    ++len;
+    return newNode->value;
+  }
+
   bool contains(const K& key) const {
     return find(key) != nullptr;
   }
@@ -300,6 +317,41 @@ public:
     }
   };
 
+  class ConstIterator {
+  public:
+    const HashMap* map;
+    size_t bucket;
+    const Node* node;
+
+  public:
+    ConstIterator(const HashMap* m, size_t b, const Node* n)
+        : map(m),
+          bucket(b),
+          node(n) {}
+
+    auto operator*() const {
+      return std::pair<const K&, const V&>(node->key, node->value);
+    }
+
+    const Node* operator->() const {
+      return node;
+    }
+
+    ConstIterator& operator++() {
+      if (node) node = node->next;
+      while (!node && ++bucket < map->bucket_amt) node = map->m_buckets[bucket];
+      return *this;
+    }
+
+    bool operator==(const ConstIterator& other) const {
+      return node == other.node && bucket == other.bucket;
+    }
+
+    bool operator!=(const ConstIterator& other) const {
+      return !(*this == other);
+    }
+  };
+
   Iterator begin() {
     for (size_t i = 0; i < bucket_amt; ++i)
       if (m_buckets[i]) return Iterator(this, i, m_buckets[i]);
@@ -308,6 +360,16 @@ public:
 
   Iterator end() {
     return Iterator(this, bucket_amt, nullptr);
+  }
+
+  ConstIterator begin() const {
+    for (size_t i = 0; i < bucket_amt; ++i)
+      if (m_buckets[i]) return ConstIterator(this, i, m_buckets[i]);
+    return end();
+  }
+
+  ConstIterator end() const {
+    return ConstIterator(this, bucket_amt, nullptr);
   }
 
 private:
