@@ -222,15 +222,15 @@ public:
     std::sort(begin(), end(), func);
   }
 
-  int linearSearch(T x) const noexcept {
+  std::optional<int> linearSearch(T x) const noexcept {
     for (size_t i = 0; i < len; i++) {
       if (ptr[i] == x) return i;
     }
 
-    return -1;
+    return std::nullopt;
   }
 
-  int binarySearch(T x) const noexcept {
+  std::optional<int> binarySearch(T x) const noexcept {
     int high = len - 1;
     int low = 0;
 
@@ -244,7 +244,7 @@ public:
         low = mid + 1;
     }
 
-    return -1;
+    return std::nullopt;
   }
 
   void extend(size_t new_size, T val = T()) noexcept {
