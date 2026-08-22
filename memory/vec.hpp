@@ -213,6 +213,10 @@ public:
     std::sort(begin(), end(), [](const T& a, const T& b) { return a > b; });
   }
 
+  void reverse() noexcept {
+    for (size_t i = 0; i < len / 2; ++i) std::swap(ptr[i], ptr[len - 1 - i]);
+  }
+
   template <typename F>
   void sortCustom(F func) noexcept {
     std::sort(begin(), end(), func);
