@@ -62,8 +62,8 @@ public:
     if (!m_buckets) panic("UnorderedMap: bucket allocation failed");
     for (size_t i = 0; i < this->bucket_amt; ++i) m_buckets[i] = nullptr;
 
-    static_assert(sizeof(Node) % alignof(Node) == 0,
-                  "UnorderedMap: Node size must be multiple of alignment");
+    if (sizeof(Node) % alignof(Node) != 0)
+      panic("UnorderedMap: Node size must be multiple of alignment");
   }
 
   explicit HashMap(std::initializer_list<std::pair<K, V>> init,
