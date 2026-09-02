@@ -205,7 +205,6 @@ public:
   }
 
   void clear() noexcept {
-    for (size_t i = 0; i < len; i++) ptr[i] = T();
     len = 0;
   }
 
