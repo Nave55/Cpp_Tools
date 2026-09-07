@@ -6,9 +6,6 @@
 #include <typeinfo>
 #include "allocators.hpp"
 
-template <typename T>
-concept Numeric = std::is_arithmetic_v<T> && !std::same_as<T, bool>;
-
 namespace {
 inline void printValue(int v) noexcept {
   printf("%d", v);
