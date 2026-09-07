@@ -36,30 +36,6 @@ inline void printValue(char c) noexcept {
 }  // namespace
 
 template <typename T>
-void print(std::span<T> sli) noexcept {
-  size_t len = sli.size();
-  if (sli.size() == 0) {
-    std::printf("[]\n");
-    return;
-  }
-  for (size_t i = 0; i < len; i++) {
-    if (i == 0) {
-      std::printf("[");
-      printValue(sli[i]);
-    } else if (i < len - 1) {
-      std::printf(", ");
-      printValue(sli[i]);
-    } else {
-      std::printf(", ");
-      printValue(sli[i]);
-      std::printf("]\n");
-    }
-
-    if (len == 1) std::printf("]\n");
-  }
-}
-
-template <typename T>
 class Vec {
 private:
   MemAllocator* m_alloc;
@@ -493,3 +469,28 @@ private:
     }
   }
 };
+
+// print for spans
+template <typename T>
+void print(std::span<T> sli) noexcept {
+  size_t len = sli.size();
+  if (sli.size() == 0) {
+    std::printf("[]\n");
+    return;
+  }
+  for (size_t i = 0; i < len; i++) {
+    if (i == 0) {
+      std::printf("[");
+      printValue(sli[i]);
+    } else if (i < len - 1) {
+      std::printf(", ");
+      printValue(sli[i]);
+    } else {
+      std::printf(", ");
+      printValue(sli[i]);
+      std::printf("]\n");
+    }
+
+    if (len == 1) std::printf("]\n");
+  }
+}
