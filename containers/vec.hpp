@@ -344,9 +344,38 @@ public:
       if (ptr[i] == val) unorderedRemove(i);
   }
 
-  template <typename F>
-  void mapIter(F func) {
-    for (size_t i = 0; i < len; ++i) func(ptr[i]);
+  template <typename Fn>
+  void mapIter(Fn fn) {
+    for (size_t i = 0; i < len; ++i) fn(ptr[i]);
+  }
+
+  long long prod() {
+    long long ttl = 1;
+    for (size_t i = 0; i < len; ++i) ttl *= ptr[i];
+    return ttl;
+  }
+
+  long long sum() {
+    long long ttl = 0;
+    for (size_t i = 0; i < len; ++i) ttl += ptr[i];
+    return ttl;
+  }
+
+  template <typename Rtype, typename Fn>
+  Rtype foldl(size_t init, Fn fn) {
+    long long ttl = init;
+    for (size_t i = 0; i < len; ++i) fn(ttl, ptr[i]);
+    return ttl;
+  }
+
+  template <typename Rtype, typename Fn>
+  std::optional<Rtype> reduce(Fn fn) {
+    if (len <= 0) return std::nullopt;
+    if (len == 1) return ptr[0];
+
+    auto ttl = ptr[0];
+    for (size_t i = 1; i < len; ++i) fn(ttl, ptr[i]);
+    return ttl;
   }
 
 private:
