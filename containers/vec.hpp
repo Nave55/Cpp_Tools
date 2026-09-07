@@ -6,6 +6,9 @@
 #include "allocators.hpp"
 
 template <typename T>
+concept Numeric = std::is_arithmetic_v<T> && !std::same_as<T, bool>;
+
+template <typename T>
 class Vec {
 private:
   MemAllocator* m_alloc;
@@ -345,35 +348,39 @@ public:
   }
 
   template <typename Fn>
-  void mapIter(Fn fn) {
+  void mapIter(Fn fn) noexcept {
     for (size_t i = 0; i < len; ++i) fn(ptr[i]);
   }
 
-  long long prod() {
-    long long ttl = 1;
-    for (size_t i = 0; i < len; ++i) ttl *= ptr[i];
-    return ttl;
-  }
-
-  long long sum() {
-    long long ttl = 0;
+  template <typename Rtype>
+    requires std::is_arithmetic_v<Rtype> && std::is_arithmetic_v<T>
+  Rtype sum() const noexcept {
+    Rtype ttl = 0;
     for (size_t i = 0; i < len; ++i) ttl += ptr[i];
     return ttl;
   }
 
+  template <typename Rtype>
+    requires std::is_arithmetic_v<Rtype> && std::is_arithmetic_v<T>
+  Rtype prod() const noexcept {
+    Rtype ttl = 1;
+    for (size_t i = 0; i < len; ++i) ttl *= ptr[i];
+    return ttl;
+  }
+
   template <typename Rtype, typename Fn>
-  Rtype foldl(size_t init, Fn fn) {
-    long long ttl = init;
+  Rtype foldl(size_t init, Fn fn) const noexcept {
+    Rtype ttl = init;
     for (size_t i = 0; i < len; ++i) fn(ttl, ptr[i]);
     return ttl;
   }
 
   template <typename Rtype, typename Fn>
-  std::optional<Rtype> reduce(Fn fn) {
+  std::optional<Rtype> reduce(Fn fn) const noexcept {
     if (len <= 0) return std::nullopt;
-    if (len == 1) return ptr[0];
+    if (len == 1) return static_cast<Rtype>(ptr[0]);
 
-    auto ttl = ptr[0];
+    Rtype ttl = static_cast<Rtype>(ptr[0]);
     for (size_t i = 1; i < len; ++i) fn(ttl, ptr[i]);
     return ttl;
   }
