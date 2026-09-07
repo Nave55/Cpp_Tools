@@ -2,11 +2,62 @@
 
 #include <algorithm>
 #include <optional>
+#include <span>
 #include <typeinfo>
 #include "allocators.hpp"
 
 template <typename T>
 concept Numeric = std::is_arithmetic_v<T> && !std::same_as<T, bool>;
+
+namespace {
+inline void printValue(int v) noexcept {
+  printf("%d", v);
+}
+
+inline void printValue(size_t v) noexcept {
+  printf("%zu", v);
+}
+
+inline void printValue(float v) noexcept {
+  printf("%f", v);
+}
+
+inline void printValue(double v) noexcept {
+  printf("%f", v);
+}
+
+inline void printValue(const char* s) noexcept {
+  printf("%s", s);
+}
+
+inline void printValue(char c) noexcept {
+  printf("%c", c);
+}
+}  // namespace
+
+template <typename T>
+void print(std::span<T> sli) noexcept {
+  size_t len = sli.size();
+  if (sli.size() == 0) {
+    std::printf("[]\n");
+    return;
+  }
+  for (size_t i = 0; i < len; i++) {
+    if (i == 0) {
+      std::printf("[");
+      printValue(sli[i]);
+    } else if (i < len - 1) {
+      std::printf(", ");
+      printValue(sli[i]);
+    } else {
+      std::printf(", ");
+      printValue(sli[i]);
+      std::printf("]\n");
+    }
+
+    if (len == 1) std::printf("]\n");
+  }
+}
 
 template <typename T>
 class Vec {
@@ -163,6 +214,14 @@ public:
     return ptr + len;
   }
 
+  std::span<T> slice(size_t start, size_t end) const noexcept {
+    return std::span<T>(ptr, len).subspan(start, end);
+  }
+
+  std::span<T> toSpan() const noexcept {
+    return std::span<T>(ptr, len);
+  }
+
   const char* type() const noexcept {
     return typeid(T).name();
   }
@@ -175,13 +234,35 @@ public:
     for (size_t i = 0; i < len; i++) {
       if (i == 0) {
         std::printf("[");
-        m_printValue(ptr[i]);
+        printValue(ptr[i]);
       } else if (i < len - 1) {
         std::printf(", ");
-        m_printValue(ptr[i]);
+        printValue(ptr[i]);
       } else {
         std::printf(", ");
-        m_printValue(ptr[i]);
+        printValue(ptr[i]);
+        std::printf("]\n");
+      }
+
+      if (len == 1) std::printf("]\n");
+    }
+  }
+
+  void print(std::span<T> sli) const noexcept {
+    if (len == 0) {
+      std::printf("[]\n");
+      return;
+    }
+    for (size_t i = 0; i < sli.size(); i++) {
+      if (i == 0) {
+        std::printf("[");
+        printValue(sli[i]);
+      } else if (i < sli.size() - 1) {
+        std::printf(", ");
+        printValue(sli[i]);
+      } else {
+        std::printf(", ");
+        printValue(sli[i]);
         std::printf("]\n");
       }
 
@@ -191,11 +272,11 @@ public:
 
   void printInfo() const noexcept {
     std::printf("length: ");
-    m_printValue(len);
+    printValue(len);
     std::printf(", capacity: ");
-    m_printValue(cap);
+    printValue(cap);
     std::printf(", type: ");
-    m_printValue(type());
+    printValue(type());
     std::printf("\n");
   }
 
@@ -410,29 +491,5 @@ private:
       ptr = new_vec;
       cap = new_cap;
     }
-  }
-
-  void m_printValue(int v) const noexcept {
-    printf("%d", v);
-  }
-
-  void m_printValue(size_t v) const noexcept {
-    printf("%zu", v);
-  }
-
-  void m_printValue(float v) const noexcept {
-    printf("%f", v);
-  }
-
-  void m_printValue(double v) const noexcept {
-    printf("%f", v);
-  }
-
-  void m_printValue(const char* s) const noexcept {
-    printf("%s", s);
-  }
-
-  void m_printValue(char c) const noexcept {
-    printf("%c", c);
   }
 };
