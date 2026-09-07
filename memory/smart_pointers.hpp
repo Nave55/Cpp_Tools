@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <cstdio>
 
 template <typename T>
 class UniquePtr {
@@ -10,7 +9,7 @@ public:
 
 public:
   UniquePtr()
-    : ptr(new T()) {}
+      : ptr(new T()) {}
 
   explicit UniquePtr(T* raw)
       : ptr{raw} {}
@@ -38,9 +37,6 @@ public:
 
   ~UniquePtr() {
     delete (ptr);
-#ifdef DEBUG
-    std::printf("Unique Ptr Released\n");
-#endif
   }
 
   T& operator*() const noexcept {
@@ -93,19 +89,17 @@ public:
   SharedPtr(const SharedPtr& other) noexcept
       : ptr(other.ptr),
         m_cb(other.m_cb) {
-      if (m_cb)
-          m_cb->strong.fetch_add(1);
+    if (m_cb) m_cb->strong.fetch_add(1);
   }
 
   SharedPtr& operator=(const SharedPtr& other) noexcept {
-      if (this != &other) {
-          m_release();
-          ptr = other.ptr;
-          m_cb = other.m_cb;
-          if (m_cb)
-              m_cb->strong.fetch_add(1);
-      }
-      return *this;
+    if (this != &other) {
+      m_release();
+      ptr = other.ptr;
+      m_cb = other.m_cb;
+      if (m_cb) m_cb->strong.fetch_add(1);
+    }
+    return *this;
   }
 
   SharedPtr(SharedPtr&& other) noexcept
@@ -131,16 +125,16 @@ public:
   }
 
   uint32_t getWeakCount() const {
-      return m_cb ? m_cb->weak.load() : 0;
+    return m_cb ? m_cb->weak.load() : 0;
   }
 
   uint32_t getStrongCount() const {
-      return m_cb ? m_cb->strong.load() : 0;
+    return m_cb ? m_cb->strong.load() : 0;
   }
 
   T& operator*() const {
-      assert(ptr != nullptr);
-      return *ptr;
+    assert(ptr != nullptr);
+    return *ptr;
   }
 
   T* operator->() const noexcept {
@@ -156,9 +150,6 @@ private:
 
       if (m_cb->weak.fetch_sub(1) == 1) {
         delete m_cb;
-#ifdef DEBUG
-        std::printf("Shared Ptr Released\n");
-#endif
       }
     }
   }
@@ -274,9 +265,6 @@ public:
   ~IntrusivePtr() {
     if (m_ptr) {
       m_ptr->release_ref();
-#ifdef DEBUG
-      std::printf("Intrusive Ptr Released\n");
-#endif
     }
   }
 
