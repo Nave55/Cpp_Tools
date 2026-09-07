@@ -99,9 +99,6 @@ public:
 
   ~Arena() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
-#ifdef DEBUG
-    std::printf("Arena destroyed\n");
-#endif
   }
 
   Arena(const Arena&) = delete;
@@ -243,9 +240,6 @@ public:
   ~TempArena() {
     arena.m_prev_off = m_prev_off;
     arena.m_curr_off = m_curr_off;
-#if DEBUG
-    std::printf("Temp Arena Destroyed\n");
-#endif
   }
 
   TempArena(const TempArena&) = delete;
@@ -280,9 +274,6 @@ public:
 
   ~Stack() {
     ::operator delete[](m_buf, std::align_val_t{DEFAULT_ALIGNMENT});
-#ifdef DEBUG
-    std::printf("Stack destroyed\n");
-#endif
   }
 
   Stack(const Stack&) = delete;
@@ -317,7 +308,6 @@ public:
 
     if (header->padding > m_buf_len) panic("Padding is > m_buf_len");
     if (header->prev_offset > m_curr_off) panic("prev_off > m_curr_off");
-
     m_curr_off = end_offset;
 
     // Zero memory (optional)
@@ -489,9 +479,6 @@ public:
 
   ~TempStack() {
     m_stack.m_curr_off = m_curr_offset;
-#ifdef DEBUG
-    std::printf("Temp Stack Destroyed\n");
-#endif
   }
 
   TempStack(const TempStack&) = delete;
@@ -526,7 +513,6 @@ public:
     m_buf_len = buf_size;
     m_buf = static_cast<unsigned char*>(
         ::operator new[](m_buf_len, std::align_val_t{chunk_alignment}));
-
     m_chunk_size =
         (chunk_size + (chunk_alignment - 1)) & ~(chunk_alignment - 1);
 
@@ -617,10 +603,6 @@ public:
   }
 
   ~TempPool() {
-#ifdef DEBUG
-    std::printf("Temp Pool Destroyed\n");
-#endif
-
     m_pool.m_head = m_marker;
   }
 };
