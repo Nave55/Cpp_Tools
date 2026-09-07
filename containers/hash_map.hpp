@@ -126,6 +126,50 @@ public:
     return find(key);
   }
 
+  std::optional<V&> at(const K& key) {
+    V* p = find(key);
+    if (!p) return std::nullopt;
+    return *p;
+  }
+
+  std::optional<const V&> at(const K& key) const {
+    const V* p = find(key);
+    if (!p) return std::nullopt;
+    return *p;
+  }
+
+  V& atOrInsert(const K& key) {
+    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
+
+    const size_t raw = m_hash(key);
+    const size_t h = m_mixHash(raw);
+    const size_t i = h & (bucket_amt - 1);
+
+    Node* n = m_buckets[i];
+    while (n) {
+      if (n->hash == h && m_eq(n->key, key)) return n->value;
+      n = n->next;
+    }
+
+    Node* newNode = m_allocNode(h, key, V{});
+    newNode->next = m_buckets[i];
+    m_buckets[i] = newNode;
+    ++len;
+    return newNode->value;
+  }
+
+  void print() const noexcept {
+    std::printf("HashMap {\n");
+    for (auto&& [k, v] : *this) {
+      std::printf("  ");
+      printValue(k);
+      std::printf(" => ");
+      printValue(v);
+      std::printf("\n");
+    }
+    std::printf("}\n");
+  }
+
   size_t remaining_capacity() const {
     return cap - len;
   }
@@ -202,38 +246,6 @@ public:
       n = n->next;
     }
     return nullptr;
-  }
-
-  std::optional<V&> at(const K& key) {
-    V* p = find(key);
-    if (!p) return std::nullopt;
-    return *p;
-  }
-
-  std::optional<const V&> at(const K& key) const {
-    const V* p = find(key);
-    if (!p) return std::nullopt;
-    return *p;
-  }
-
-  V& atOrInsert(const K& key) {
-    if (len * 4 > bucket_amt * 3) rehash(bucket_amt * 2);
-
-    const size_t raw = m_hash(key);
-    const size_t h = m_mixHash(raw);
-    const size_t i = h & (bucket_amt - 1);
-
-    Node* n = m_buckets[i];
-    while (n) {
-      if (n->hash == h && m_eq(n->key, key)) return n->value;
-      n = n->next;
-    }
-
-    Node* newNode = m_allocNode(h, key, V{});
-    newNode->next = m_buckets[i];
-    m_buckets[i] = newNode;
-    ++len;
-    return newNode->value;
   }
 
   bool contains(const K& key) const {
