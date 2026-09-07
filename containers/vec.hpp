@@ -212,6 +212,10 @@ public:
     std::fill(begin(), end(), val);
   }
 
+  void reverse() noexcept {
+    for (size_t i = 0; i < len / 2; ++i) std::swap(ptr[i], ptr[len - 1 - i]);
+  }
+
   void sort() noexcept {
     std::sort(begin(), end());
   }
@@ -220,13 +224,9 @@ public:
     std::sort(begin(), end(), [](const T& a, const T& b) { return a > b; });
   }
 
-  void reverse() noexcept {
-    for (size_t i = 0; i < len / 2; ++i) std::swap(ptr[i], ptr[len - 1 - i]);
-  }
-
-  template <typename F>
-  void sortCustom(F func) noexcept {
-    std::sort(begin(), end(), func);
+  template <typename Fn>
+  void sortCustom(Fn fn) noexcept {
+    std::sort(begin(), end(), fn);
   }
 
   std::optional<int> linearSearch(T x) const noexcept {
@@ -308,43 +308,45 @@ public:
 
   std::optional<T> popBack() noexcept {
     if (len <= 0) return std::nullopt;
+
     T val = ptr[len - 1];
     --len;
+
+    return val;
+  }
+
+  T popBackUnsafe() noexcept {
+    T val = ptr[len - 1];
+    --len;
+
     return val;
   }
 
   void orderedRemove(size_t ind) noexcept {
     if (ind >= len) return;
-
     for (size_t i = ind; i + 1 < len; ++i) ptr[i] = ptr[i + 1];
-
     --len;
   }
 
   void unorderedRemove(size_t ind) noexcept {
     if (ind >= len) return;
-
     ptr[ind] = ptr[len - 1];
     --len;
   }
 
   void deleteVal(T val) noexcept {
-    for (int i = len - 1; i >= 0; --i) {
+    for (int i = len - 1; i >= 0; --i)
       if (ptr[i] == val) orderedRemove(i);
-    }
   }
 
   void deleteValUnordered(T val) noexcept {
-    for (int i = len - 1; i >= 0; --i) {
+    for (int i = len - 1; i >= 0; --i)
       if (ptr[i] == val) unorderedRemove(i);
-    }
   }
 
   template <typename F>
   void mapIter(F func) {
-    for (size_t i = 0; i < len; ++i) {
-      func(ptr[i]);
-    }
+    for (size_t i = 0; i < len; ++i) func(ptr[i]);
   }
 
 private:
