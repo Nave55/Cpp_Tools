@@ -6,7 +6,6 @@
 #include <typeinfo>
 #include "allocators.hpp"
 
-namespace {
 inline void printValue(int v) noexcept {
   printf("%d", v);
 }
@@ -30,7 +29,6 @@ inline void printValue(const char* s) noexcept {
 inline void printValue(char c) noexcept {
   printf("%c", c);
 }
-}  // namespace
 
 template <typename T>
 class Vec {
@@ -221,28 +219,6 @@ public:
     }
   }
 
-  void print(std::span<T> sli) const noexcept {
-    if (len == 0) {
-      std::printf("[]\n");
-      return;
-    }
-    for (size_t i = 0; i < sli.size(); i++) {
-      if (i == 0) {
-        std::printf("[");
-        printValue(sli[i]);
-      } else if (i < sli.size() - 1) {
-        std::printf(", ");
-        printValue(sli[i]);
-      } else {
-        std::printf(", ");
-        printValue(sli[i]);
-        std::printf("]\n");
-      }
-
-      if (len == 1) std::printf("]\n");
-    }
-  }
-
   void printInfo() const noexcept {
     std::printf("length: ");
     printValue(len);
@@ -408,7 +384,9 @@ public:
 
   template <typename Rtype>
     requires std::is_arithmetic_v<Rtype> && std::is_arithmetic_v<T>
-  Rtype sum() const noexcept {
+  std::optional<Rtype> sum() const noexcept {
+    if (len == 0) return std::nullopt;
+    if (len == 1) return static_cast<Rtype>(ptr[0]);
     Rtype ttl = 0;
     for (size_t i = 0; i < len; ++i) ttl += ptr[i];
     return ttl;
@@ -416,14 +394,17 @@ public:
 
   template <typename Rtype>
     requires std::is_arithmetic_v<Rtype> && std::is_arithmetic_v<T>
-  Rtype prod() const noexcept {
+  std::optional<Rtype> prod() const noexcept {
+    if (len == 0) return std::nullopt;
+    if (len == 1) return static_cast<Rtype>(ptr[0]);
     Rtype ttl = 1;
     for (size_t i = 0; i < len; ++i) ttl *= ptr[i];
     return ttl;
   }
 
   template <typename Rtype, typename Fn>
-  Rtype foldl(size_t init, Fn fn) const noexcept {
+  std::optional<Rtype> foldl(size_t init, Fn fn) const noexcept {
+    if (len == 0) return std::nullopt;
     Rtype ttl = init;
     for (size_t i = 0; i < len; ++i) fn(ttl, ptr[i]);
     return ttl;
@@ -433,7 +414,6 @@ public:
   std::optional<Rtype> reduce(Fn fn) const noexcept {
     if (len <= 0) return std::nullopt;
     if (len == 1) return static_cast<Rtype>(ptr[0]);
-
     Rtype ttl = static_cast<Rtype>(ptr[0]);
     for (size_t i = 1; i < len; ++i) fn(ttl, ptr[i]);
     return ttl;
