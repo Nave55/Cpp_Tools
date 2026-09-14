@@ -312,7 +312,7 @@ public:
     requires std::is_same_v<std::remove_cvref_t<S>, T>
   void pushBack(S&& val) noexcept {
     if (len == cap) m_resizeCapacity(cap * 2);
-    ptr[++len] = std::forward<S>(val);
+    ptr[len++] = std::forward<S>(val);
   }
 
   template <typename... Args>
