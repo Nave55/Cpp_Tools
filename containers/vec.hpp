@@ -109,7 +109,8 @@ public:
       : m_alloc{vec.m_alloc},
         len{vec.len},
         cap{vec.cap},
-        ptr{m_alloc->allocate(sizeof(T) * vec.cap, alignof(T))} {
+        ptr{static_cast<T*>(
+            m_alloc->allocate(sizeof(T) * vec.cap, alignof(T)))} {
     std::copy(vec.ptr, vec.ptr + vec.len, ptr);
   }
 
