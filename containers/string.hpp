@@ -189,11 +189,6 @@ public:
     }
   }
 
-  void trim() {
-    ltrim();
-    rtrim();
-  }
-
   void ltrim() {
     size_t i = 0;
 
@@ -212,6 +207,10 @@ public:
     string[len] = '\0';
   }
 
+  void trim() {
+    ltrim();
+    rtrim();
+  }
 
   void toLower() noexcept {
     for (size_t i = 0; i < len; ++i) {
