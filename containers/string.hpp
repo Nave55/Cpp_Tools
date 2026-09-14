@@ -244,6 +244,11 @@ public:
     std::sort(begin(), end(), func);
   }
 
+  void reverse() noexcept {
+    for (size_t i = 0; i < len / 2; i++)
+      std::swap(string[i], string[len - 1 - i]);
+  }
+
   bool containsChar(char x) const noexcept {
     for (size_t i = 0; i < len; i++) {
       if (string[i] == x) return true;
