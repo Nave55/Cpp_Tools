@@ -88,8 +88,87 @@ public:
     }
   }
 
-  HashMap(const HashMap&) = delete;
-  HashMap& operator=(const HashMap&) = delete;
+  HashMap(const HashMap& o)
+      : len(0),
+        cap(o.cap),
+        slab_bytes(o.slab_bytes),
+        slab_size(o.slab_size),
+        bucket_amt(o.bucket_amt),
+        m_hash(o.m_hash),
+        m_eq(o.m_eq),
+        m_free(nullptr),
+        m_alloc(o.m_alloc),
+        m_buckets(static_cast<Node**>(
+            m_alloc->allocate(sizeof(Node*) * bucket_amt, alignof(Node*)))),
+        m_can_free(o.m_can_free),
+        m_slabs(0, o.m_slabs.cap, *m_alloc) {
+    if (!m_buckets) panic("HashMap copy: bucket allocation failed");
+    for (size_t i = 0; i < bucket_amt; ++i) m_buckets[i] = nullptr;
+
+    for (size_t i = 0; i < o.m_slabs.len; ++i) {
+      void* slab = m_alloc->allocate(slab_bytes, alignof(Node));
+      if (!slab) panic("HashMap copy: slab allocation failed");
+      m_slabs.emplaceBack(slab);
+    }
+
+    for (size_t i = 0; i < o.bucket_amt; ++i) {
+      Node* cur = o.m_buckets[i];
+      while (cur) {
+        insert(cur->key, cur->value);
+        cur = cur->next;
+      }
+    }
+  }
+
+  HashMap& operator=(const HashMap& o) noexcept {
+    if (this == &o) return *this;
+
+    if (m_can_free) {
+      if (m_buckets) m_alloc->free(m_buckets);
+
+      for (size_t i = 0; i < m_slabs.len; ++i) {
+        void* slab = m_slabs.at(i).value();
+        m_alloc->free(slab);
+      }
+    }
+
+    len = 0;
+    cap = o.cap;
+    slab_bytes = o.slab_bytes;
+    slab_size = o.slab_size;
+    bucket_amt = o.bucket_amt;
+    m_hash = o.m_hash;
+    m_eq = o.m_eq;
+    m_free = nullptr;
+    m_alloc = o.m_alloc;
+    m_can_free = o.m_can_free;
+
+    m_buckets = static_cast<Node**>(
+        m_alloc->allocate(sizeof(Node*) * bucket_amt, alignof(Node*)));
+    if (!m_buckets) panic("HashMap copy assignment: bucket allocation failed");
+
+    for (size_t i = 0; i < bucket_amt; ++i) {
+      m_buckets[i] = nullptr;
+    }
+
+    m_slabs.clear();
+
+    for (size_t i = 0; i < o.m_slabs.len; ++i) {
+      void* slab = m_alloc->allocate(slab_bytes, alignof(Node));
+      if (!slab) panic("HashMap copy assignment: slab allocation failed");
+      m_slabs.emplaceBack(slab);
+    }
+
+    for (size_t i = 0; i < o.bucket_amt; ++i) {
+      Node* cur = o.m_buckets[i];
+      while (cur) {
+        insert(cur->key, cur->value);
+        cur = cur->next;
+      }
+    }
+
+    return *this;
+  }
 
   HashMap(HashMap&& o) noexcept
       : m_alloc(o.m_alloc),
