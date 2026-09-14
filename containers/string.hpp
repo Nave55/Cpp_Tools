@@ -189,6 +189,25 @@ public:
     }
   }
 
+  void ltrim() {
+    size_t i = 0;
+
+    while (i < len && isspace(static_cast<unsigned char>(string[i]))) i++;
+
+    if (i == 0) return;
+    if (i == len) {
+      string[0] = '\0';
+      len = 0;
+      return;
+    }
+
+    memmove(string, string + i, len - i);
+
+    len -= i;
+    string[len] = '\0';
+  }
+
+
   void toLower() noexcept {
     for (size_t i = 0; i < len; ++i) {
       char tmp = string[i];
