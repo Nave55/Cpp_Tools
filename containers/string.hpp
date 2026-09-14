@@ -147,6 +147,10 @@ public:
     std::printf("length: %zu, capacity: %zu\n", len, cap);
   }
 
+  bool empty() const noexcept {
+    return len == 0;
+  }
+
   char first() const noexcept {
     return string[0];
   }
@@ -176,6 +180,13 @@ public:
   void clear() noexcept {
     len = 0;
     if (string) string[0] = '\0';
+  }
+
+  void rtrim() {
+    while (len > 0 && isspace((unsigned char)string[len - 1])) {
+      string[len - 1] = '\0';
+      len--;
+    }
   }
 
   void toLower() noexcept {
