@@ -5,6 +5,7 @@
 #include <span>
 #include <typeinfo>
 #include "allocators.hpp"
+#include "string.hpp"
 
 inline void printValue(int v) noexcept {
   printf("%d", v);
@@ -30,6 +31,10 @@ inline void printValue(char c) noexcept {
   printf("%c", c);
 }
 
+inline void printValue(String s) noexcept {
+  s.print();
+}
+
 template <typename T>
 class Vec {
 private:
@@ -51,15 +56,13 @@ public:
     }
   }
 
-  explicit Vec(size_t sz, MemAllocator& alloc = arena_alloc)
+  explicit Vec(size_t cap, MemAllocator& alloc = arena_alloc)
       : m_alloc{&alloc},
-        len{sz},
-        cap{sz},
-        ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * sz, alignof(T)))} {
-    if (sizeof(T) * sz > m_alloc->getChunkSize())
+        len{0},
+        cap{cap},
+        ptr{static_cast<T*>(m_alloc->allocate(sizeof(T) * cap, alignof(T)))} {
+    if (sizeof(T) * cap > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
-
-    for (size_t i = 0; i < sz; ++i) ptr[i] = T();
   }
 
   explicit Vec(size_t sz, size_t cap, MemAllocator& alloc = arena_alloc)
@@ -70,7 +73,7 @@ public:
     if (sizeof(T) * cap > m_alloc->getChunkSize())
       panic("Initial Vec capacity does not fit in a pool chunk");
 
-    for (size_t i = 0; i < sz; ++i) ptr[i] = T();
+    for (size_t i = 0; i < sz; ++i) new (&ptr[i]) T();
   }
 
   explicit Vec(std::initializer_list<T> lst, MemAllocator& alloc = arena_alloc)
@@ -104,17 +107,17 @@ public:
 
   Vec(const Vec& vec)
       : m_alloc{vec.m_alloc},
-        ptr{m_alloc->allocate(sizeof(T) * vec.cap, alignof(T))},
         len{vec.len},
-        cap{vec.cap} {
+        cap{vec.cap},
+        ptr{m_alloc->allocate(sizeof(T) * vec.cap, alignof(T))} {
     std::copy(vec.ptr, vec.ptr + vec.len, ptr);
   }
 
   Vec(Vec&& vec)
       : m_alloc{vec.m_alloc},
-        ptr{std::move(vec.ptr)},
         len{vec.len},
-        cap{vec.cap} {
+        cap{vec.cap},
+        ptr{std::move(vec.ptr)} {
     vec.ptr = nullptr;
     vec.len = 0;
     vec.cap = 0;
@@ -388,7 +391,7 @@ public:
     if (len == 0) return std::nullopt;
     if (len == 1) return static_cast<Rtype>(ptr[0]);
     Rtype ttl = 0;
-    for (size_t i = 0; i < len; ++i) ttl += ptr[i];
+    for (size_t i = 0; i < len; ++i) ttl += static_cast<Rtype>(ptr[i]);
     return ttl;
   }
 
@@ -398,7 +401,7 @@ public:
     if (len == 0) return std::nullopt;
     if (len == 1) return static_cast<Rtype>(ptr[0]);
     Rtype ttl = 1;
-    for (size_t i = 0; i < len; ++i) ttl *= ptr[i];
+    for (size_t i = 0; i < len; ++i) ttl *= static_cast<Rtype>(ptr[i]);
     return ttl;
   }
 
@@ -406,7 +409,7 @@ public:
   std::optional<Rtype> foldl(size_t init, Fn fn) const noexcept {
     if (len == 0) return std::nullopt;
     Rtype ttl = init;
-    for (size_t i = 0; i < len; ++i) fn(ttl, ptr[i]);
+    for (size_t i = 0; i < len; ++i) fn(ttl, static_cast<Rtype>(ptr[i]));
     return ttl;
   }
 
@@ -415,7 +418,7 @@ public:
     if (len <= 0) return std::nullopt;
     if (len == 1) return static_cast<Rtype>(ptr[0]);
     Rtype ttl = static_cast<Rtype>(ptr[0]);
-    for (size_t i = 1; i < len; ++i) fn(ttl, ptr[i]);
+    for (size_t i = 1; i < len; ++i) fn(ttl, static_cast<Rtype>(ptr[i]));
     return ttl;
   }
 
