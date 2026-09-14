@@ -91,8 +91,44 @@ public:
     str.cap = 0;
   }
 
-  String& operator=(const String&) = delete;
-  String& operator=(String&&) = delete;
+  String& operator=(const String& other) {
+    if (this == &other) return *this;
+
+    if (m_alloc->getType() == AllocType::Pool && ptr) {
+      m_alloc->free(ptr);
+    }
+
+    m_alloc = other.m_alloc;
+    len = other.len;
+    cap = other.cap;
+
+    ptr = static_cast<char*>(
+        m_alloc->allocate(sizeof(char) * cap, alignof(char)));
+    if (!ptr) panic("String copy assignment: allocation failed");
+
+    std::memcpy(ptr, other.ptr, len + 1);
+
+    return *this;
+  }
+
+  String& operator=(String&& other) {
+    if (this == &other) return *this;
+
+    if (ptr && m_alloc && m_alloc->getType() == AllocType::Pool) {
+      m_alloc->free(ptr);
+    }
+
+    m_alloc = other.m_alloc;
+    len = other.len;
+    cap = other.cap;
+    ptr = other.ptr;
+
+    other.ptr = nullptr;
+    other.len = 0;
+    other.cap = 0;
+
+    return *this;
+  };
 
   char& operator[](size_t i) noexcept {
     return string[i];
