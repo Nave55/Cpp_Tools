@@ -189,6 +189,11 @@ public:
     }
   }
 
+  void trim() {
+    ltrim();
+    rtrim();
+  }
+
   void ltrim() {
     size_t i = 0;
 
