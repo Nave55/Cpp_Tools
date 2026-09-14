@@ -64,14 +64,16 @@ public:
 
     if (sizeof(Node) % alignof(Node) != 0)
       panic("UnorderedMap: Node size must be multiple of alignment");
+
+    slab_bytes = slab_size * slabs;
   }
 
   explicit HashMap(std::initializer_list<std::pair<K, V>> init,
                    MemAllocator& alloc = arena_alloc, size_t slab_size = 32,
                    size_t slabs = 4, size_t bucket_amt = 64)
-      : HashMap(alloc, slab_size, slabs, bucket_amt)  // delegate
-  {
+      : HashMap(alloc, slab_size, slabs, bucket_amt) {
     for (auto& [k, v] : init) insert(k, v);
+    slab_bytes = slab_size * slabs;
   }
 
   ~HashMap() {
