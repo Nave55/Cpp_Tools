@@ -1,9 +1,9 @@
 #pragma once
 
-#include "mem/allocators.hpp"
 #include <utility>
+#include "../memory/allocators.hpp"
 
-std::pair<const char*, const char*> splitOnce(
+inline std::pair<const char*, const char*> splitOnce(
     const char* str, const char* delim, MemAllocator& alloc = arena_alloc) {
   const char* d = std::strstr(str, delim);
   if (!d) return {str, nullptr};
