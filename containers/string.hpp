@@ -293,26 +293,26 @@ public:
     return std::nullopt;
   }
 
-  bool containsSubStr(const String& sub) {
-    if (sub.len > len) return false;
+  bool containsSubStr(std::string_view sub) const noexcept {
+    if (sub.size() > len) return false;
 
-    for (size_t i = 0; i <= len - sub.len; ++i) {
+    for (size_t i = 0; i <= len - sub.size(); ++i) {
       size_t j = 0;
-      while (j < sub.len && ptr[i + j] == sub[j]) ++j;
-      if (j == sub.len) return true;
+      while (j < sub.size() && ptr[i + j] == sub[j]) ++j;
+      if (j == sub.size()) return true;
     }
 
     return false;
   }
 
   template <typename P = Pair<size_t, size_t>>
-  std::optional<P> findSubStr(const String& sub) {
-    if (sub.len > len) return std::nullopt;
+  std::optional<P> findSubStr(std::string_view sub) const noexcept {
+    if (sub.size() > len) return std::nullopt;
 
-    for (size_t i = 0; i <= len - sub.len; ++i) {
+    for (size_t i = 0; i <= len - sub.size(); ++i) {
       size_t j = 0;
-      while (j < sub.len && ptr[i + j] == sub[j]) ++j;
-      if (j == sub.len) return std::optional<P>({i, i + j - 1});
+      while (j < sub.size() && ptr[i + j] == sub[j]) ++j;
+      if (j == sub.size()) return std::optional<P>({i, i + j - 1});
     }
 
     return std::nullopt;
