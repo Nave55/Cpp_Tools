@@ -4,11 +4,7 @@
 #include <optional>
 #include <string_view>
 #include "../memory/allocators.hpp"
-
-struct Pair {
-  size_t x;
-  size_t y;
-};
+#include "pair.hpp"
 
 class String {
 private:
@@ -309,13 +305,14 @@ public:
     return false;
   }
 
-  std::optional<Pair> findSubStr(const String& sub) {
+  template <typename P = Pair<size_t, size_t>>
+  std::optional<P> findSubStr(const String& sub) {
     if (sub.len > len) return std::nullopt;
 
     for (size_t i = 0; i <= len - sub.len; ++i) {
       size_t j = 0;
       while (j < sub.len && ptr[i + j] == sub[j]) ++j;
-      if (j == sub.len) return std::optional<Pair>({i, i + j - 1});
+      if (j == sub.len) return std::optional<P>({i, i + j - 1});
     }
 
     return std::nullopt;
