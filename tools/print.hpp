@@ -37,16 +37,3 @@ auto printCArr(const T (&arr)[N]) -> void {
     }
   }
 }
-
-template <typename T, std::size_t N>
-auto printCArr(const T (&arr)[N]) -> void {
-  for (size_t i{0}; i < N; ++i) {
-    if (i == 0) {
-      std::cout << "[" << arr[i] << ", ";
-    } else if (i > 0 && i < N - 1) {
-      std::cout << arr[i] << ", ";
-    } else {
-      std::cout << arr[i] << "]\n";
-    }
-  }
-}
