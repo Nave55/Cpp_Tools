@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cstring>
 #include <optional>
 #include <string_view>
 #include "../memory/allocators.hpp"
@@ -343,12 +344,9 @@ public:
   void insert(S&& val, size_t ind) noexcept {
     if (ind > len) ind = len;
     if (len + 1 >= cap) m_resizeCapacity(cap * 2);
-
-    for (size_t i = len + 1; i > ind; --i) ptr[i] = ptr[i - 1];
-
+    memmove(ptr + ind + 1, ptr + ind, len - ind + 1);
     ptr[ind] = std::forward<S>(val);
     ++len;
-    ptr[len] = '\0';
   }
 
   void pop() noexcept {
@@ -375,7 +373,7 @@ public:
 
   void orderedRemove(size_t ind) noexcept {
     if (ind >= len) return;
-    for (size_t i = ind; i + 1 < len; ++i) ptr[i] = ptr[i + 1];
+    memmove(ptr + ind, ptr + ind + 1, (len - ind - 1));
     --len;
     ptr[len] = '\0';
   }
@@ -396,6 +394,16 @@ public:
   void deleteValUnordered(char val) noexcept {
     for (int i = static_cast<int>(len) - 1; i >= 0; --i) {
       if (ptr[i] == val) unorderedRemove(static_cast<size_t>(i));
+    }
+  }
+
+  void deleteSubStr(std::string_view str) noexcept {
+    auto sub = findSubStr(str);
+    if (sub.has_value()) {
+      auto [l, r] = sub.value();
+      memmove(ptr + l, ptr + r + 1, len - r);
+      len -= r - l + 1;
+      ptr[len] = '\0';
     }
   }
 
