@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cstring>
 #include <optional>
 #include <string_view>
 #include "../memory/allocators.hpp"
