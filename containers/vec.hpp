@@ -330,7 +330,7 @@ public:
 
     if (len == cap) m_resizeCapacity(cap * 2);
 
-    for (size_t i = len; i > ind; --i) ptr[i] = ptr[i - 1];
+    for (size_t i = len; i > ind; --i) ptr[i] = std::move(ptr[i - 1]);
 
     ptr[ind] = std::forward<S>(val);
     ++len;
@@ -358,13 +358,13 @@ public:
 
   void orderedRemove(size_t ind) noexcept {
     if (ind >= len) return;
-    for (size_t i = ind; i + 1 < len; ++i) ptr[i] = ptr[i + 1];
+    for (size_t i = ind; i + 1 < len; ++i) ptr[i] = std::move(ptr[i + 1]);
     --len;
   }
 
   void unorderedRemove(size_t ind) noexcept {
     if (ind >= len) return;
-    ptr[ind] = ptr[len - 1];
+    ptr[ind] = std::move(ptr[len - 1]);
     --len;
   }
 
