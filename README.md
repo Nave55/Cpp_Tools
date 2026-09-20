@@ -6,6 +6,9 @@
 - Custom Arena Pmr Allocator
 - Vector
 - HashMap
-- String
+- String (mutable string)
+- Str (constexpr fixed-size string)
 - Smart Pointers
 - Memory Tracking
+- Pair
+- Extra tools
