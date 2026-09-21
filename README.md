@@ -11,5 +11,4 @@
 - Str (constexpr fixed-size string)
 - Smart Pointers
 - Memory Tracking
-- Pair
 - Extra tools
