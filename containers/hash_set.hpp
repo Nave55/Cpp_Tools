@@ -187,6 +187,24 @@ public:
     return *this;
   }
 
+  // union
+  HashSet operator|(const HashSet& other) const {
+    HashSet result(*this);  // copy constructor handles slabs, buckets, etc.
+    for (auto& key : other) result.insert(key);
+    return result;
+  }
+
+  // intersection
+  HashSet operator&(const HashSet& other) const {
+    HashSet result(m_alloc ? *m_alloc : arena_alloc, slab_size, m_slabs.cap,
+                   bucket_amt);
+
+    for (auto& key : *this)
+      if (other.contains(key)) result.insert(key);
+
+    return result;
+  }
+
   bool contains(const K& key) const {
     const size_t raw = m_hash(key);
     const size_t h = m_mixHash(raw);
@@ -257,6 +275,27 @@ public:
       }
     }
     len = 0;
+  }
+
+  HashSet unionWith(const HashSet& other) const {
+    HashSet result(*this);
+
+    for (auto& key : other) {
+      result.insert(key);
+    }
+
+    return result;
+  }
+
+  HashSet intersectionWith(const HashSet& other) const {
+    HashSet result(m_alloc ? *m_alloc : arena_alloc, slab_size, m_slabs.cap,
+                   bucket_amt);
+
+    for (auto& key : *this) {
+      if (other.contains(key)) result.insert(key);
+    }
+
+    return result;
   }
 
   void rehash(size_t new_cap) {
