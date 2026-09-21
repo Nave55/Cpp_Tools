@@ -1,6 +1,5 @@
 #pragma once
 
-#include <optional>
 #include "vec.hpp"
 
 // Node
@@ -64,7 +63,7 @@ public:
     if (sizeof(Node) % alignof(Node) != 0)
       panic("UnorderedMap: Node size must be multiple of alignment");
 
-    slab_bytes = slab_size * slabs;
+    slab_bytes = slab_size * sizeof(Node);
   }
 
   explicit HashMap(std::initializer_list<std::pair<K, V>> init,
