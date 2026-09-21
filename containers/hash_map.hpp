@@ -2,30 +2,9 @@
 
 #include "vec.hpp"
 
-// Node
-template <typename K, typename V>
-struct HashMapNode {
-  size_t hash;
-  K key;
-  V value;
-  HashMapNode* next;
-
-  HashMapNode(size_t h, const K& k, const V& v)
-      : hash(h),
-        key(k),
-        value(v),
-        next(nullptr) {}
-
-  HashMapNode(size_t h, K&& k, V&& v)
-      : hash(h),
-        key(std::move(k)),
-        value(std::move(v)),
-        next(nullptr) {}
-};
-
 // HashMap - (Arena/Stack/Pool)
 template <typename K, typename V, typename Hash = std::hash<K>,
-          typename KeyEq = std::equal_to<K>, typename Node = HashMapNode<K, V>>
+          typename KeyEq = std::equal_to<K>>
 class HashMap {
 public:
   class Iterator;
@@ -37,6 +16,7 @@ public:
   size_t bucket_amt;      // number of buckets
 
 private:
+  struct Node;
   Hash m_hash = Hash{};
   KeyEq m_eq = KeyEq{};
   Node* m_free = nullptr;  // free list head
@@ -463,6 +443,24 @@ public:
   }
 
 private:
+  struct Node {
+    size_t hash;
+    K key;
+    V value;
+    Node* next;
+
+    Node(size_t h, const K& k, const V& v)
+        : hash(h),
+          key(k),
+          value(v),
+          next(nullptr) {}
+
+    Node(size_t h, K&& k, V&& v)
+        : hash(h),
+          key(std::move(k)),
+          value(std::move(v)),
+          next(nullptr) {}
+  };
   static size_t m_nextPow2(size_t x) {
     if (x == 0) return 1;
     --x;
