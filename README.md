@@ -6,6 +6,7 @@
 - Custom Arena Pmr Allocator
 - Vector
 - HashMap
+- HashSet
 - String (mutable string)
 - Str (constexpr fixed-size string)
 - Smart Pointers
