@@ -4,19 +4,19 @@
 
 // Node
 template <typename K, typename V>
-struct HashNode {
+struct HashMapNode {
   size_t hash;
   K key;
   V value;
-  HashNode* next;
+  HashMapNode* next;
 
-  HashNode(size_t h, const K& k, const V& v)
+  HashMapNode(size_t h, const K& k, const V& v)
       : hash(h),
         key(k),
         value(v),
         next(nullptr) {}
 
-  HashNode(size_t h, K&& k, V&& v)
+  HashMapNode(size_t h, K&& k, V&& v)
       : hash(h),
         key(std::move(k)),
         value(std::move(v)),
@@ -25,10 +25,8 @@ struct HashNode {
 
 // HashMap - (Arena/Stack/Pool)
 template <typename K, typename V, typename Hash = std::hash<K>,
-          typename KeyEq = std::equal_to<K>>
+          typename KeyEq = std::equal_to<K>, typename Node = HashMapNode<K, V>>
 class HashMap {
-  using Node = HashNode<K, V>;
-
 public:
   class Iterator;
   class ConstIterator;
@@ -63,7 +61,7 @@ public:
     if (sizeof(Node) % alignof(Node) != 0)
       panic("UnorderedMap: Node size must be multiple of alignment");
 
-    slab_bytes = slab_size * sizeof(Node);
+    slab_bytes = slab_size * slabs;
   }
 
   explicit HashMap(std::initializer_list<std::pair<K, V>> init,
@@ -169,17 +167,18 @@ public:
   }
 
   HashMap(HashMap&& o) noexcept
-      : m_alloc(o.m_alloc),
-        len(o.len),
+      : len(o.len),
+        cap(o.cap),
+        slab_bytes(o.slab_bytes),
+        slab_size(o.slab_size),
         bucket_amt(o.bucket_amt),
-        m_buckets(o.m_buckets),
         m_hash(std::move(o.m_hash)),
         m_eq(std::move(o.m_eq)),
-        m_can_free(o.m_can_free),
-        m_slabs(std::move(o.m_slabs)),
         m_free(o.m_free),
-        slab_size(o.slab_size),
-        slab_bytes(o.slab_bytes) {
+        m_alloc(o.m_alloc),
+        m_buckets(o.m_buckets),
+        m_can_free(o.m_can_free),
+        m_slabs(std::move(o.m_slabs)) {
     o.m_alloc = nullptr;
     o.m_buckets = nullptr;
     o.len = 0;
