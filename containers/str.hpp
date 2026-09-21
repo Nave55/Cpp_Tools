@@ -81,7 +81,7 @@ public:
     return std::string_view(ptr, N);
   }
 
-  std::string_view slice(size_t start, size_t end) const noexcept {
+  std::string_view slice(size_t start, size_t end = N - 1) const noexcept {
     return std::string_view(ptr + start, (end - start + 1));
   }
 
