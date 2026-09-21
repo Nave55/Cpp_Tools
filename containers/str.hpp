@@ -39,6 +39,10 @@ public:
     return ptr[i];
   }
 
+  constexpr size_t len() const noexcept {
+    return N;
+  }
+
   constexpr char* begin() noexcept {
     return ptr;
   }
