@@ -52,8 +52,8 @@ public:
   }
 
   explicit HashMap(std::initializer_list<std::pair<K, V>> init,
-                   MemAllocator& alloc = arena_alloc, size_t slab_size = 32,
-                   size_t slabs = 4, size_t bucket_amt = 64)
+                   MemAllocator& alloc, size_t slab_size, size_t slabs = 4,
+                   size_t bucket_amt = 64)
       : HashMap(alloc, slab_size, slabs, bucket_amt) {
     for (auto& [k, v] : init) insert(k, v);
     slab_bytes = slab_size * sizeof(m_Node);
