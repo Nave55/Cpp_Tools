@@ -2,13 +2,13 @@
 
 **Currently Contains:**
 
-- Custom Allocators
+- Custom Allocators (Arena, Pool, Stack)
 - Custom Arena Pmr Allocator
-- Vector
-- HashMap
-- HashSet
-- String (mutable string)
-- Str (constexpr fixed-size string)
-- Smart Pointers
+- Dynamic Array ('Vec<T>')
+- Hash Table ('HashMap<K, V>')
+- Set (HashSet<V>) 
+- Dynamic String (String)
+- Constexpr fixed-size string (Str)
+- Smart Pointers (Unique, Shared, Weak)
 - Memory Tracking
 - Extra tools
